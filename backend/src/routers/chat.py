@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+import asyncio
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field
 
 from src.agent_orchestrator.loop import LoopOptions, run_loop
+from src.agent_orchestrator.system_prompt_loader import get_default_system_prompt
 from src.agent_orchestrator.tools import get_tools_for_user
+
+try:
+    from src.eva_memory.memory_client import add_turn_background, get_context_sync
+except ImportError:
+    add_turn_background = None
+    get_context_sync = None
 
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -38,9 +47,20 @@ class ChatResponse(BaseModel):
 
 
 @router.post("", response_model=ChatResponse)
-async def chat(request: ChatRequest) -> ChatResponse:
-    """Run the agent loop and return the assistant reply."""
-    opts = LoopOptions(system_prompt=request.system_prompt, model=request.model)
+async def chat(request: ChatRequest, background_tasks: BackgroundTasks) -> ChatResponse:
+    """Run the agent loop and return the assistant reply. Memory context is injected before the LLM call; the turn is added to memory in a background task after the response is sent."""
+    base_prompt = request.system_prompt or get_default_system_prompt()
+    if get_context_sync is not None:
+        memory_context = await asyncio.to_thread(
+            get_context_sync,
+            request.user_id,
+            request.message,
+            k=5,
+            mode="semantic",
+        )
+        if memory_context:
+            base_prompt = f"{base_prompt}\n\n{memory_context}".strip()
+    opts = LoopOptions(system_prompt=base_prompt or None, model=request.model)
     try:
         tools = get_tools_for_user(request.user_id)
         session_id, reply, messages = await run_loop(
@@ -50,10 +70,18 @@ async def chat(request: ChatRequest) -> ChatResponse:
             tools=tools,
             options=opts,
         )
-        return ChatResponse(
+        response = ChatResponse(
             session_id=session_id,
             reply=reply,
             message_count=len(messages),
         )
+        if add_turn_background is not None and (request.message.strip() or reply.strip()):
+            background_tasks.add_task(
+                add_turn_background,
+                request.user_id,
+                request.message,
+                reply,
+            )
+        return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
