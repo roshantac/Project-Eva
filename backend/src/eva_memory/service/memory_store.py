@@ -103,12 +103,20 @@ class MemoryStore:
         )
         return [self._to_record(r) for r in rows]
 
-    def search(self, user_id: str, query: str, k: int = 5) -> List[SearchHit]:
+    def search(
+        self,
+        user_id: str,
+        query: str,
+        k: int = 5,
+        categories: Optional[List[str]] = None,
+    ) -> List[SearchHit]:
+        """Semantic (vector) search. Optionally filter by metadata category."""
         if not query:
             return []
 
         vector = self._embedder.embed(query, memory_action="search")
-        hits = self._faiss.search(user_id=user_id, vector=vector, k=k)
+        fetch_k = k * 3 if categories else k
+        hits = self._faiss.search(user_id=user_id, vector=vector, k=fetch_k)
         if not hits:
             return []
 
@@ -120,13 +128,89 @@ class MemoryStore:
             row = rows_by_id.get(fid)
             if row is None:
                 continue
-            results.append(
-                SearchHit(
-                    memory=self._to_record(row),
-                    score=score,
-                )
-            )
+            record = self._to_record(row)
+            if categories:
+                cat = (record.metadata or {}).get("category")
+                if cat not in categories:
+                    continue
+            results.append(SearchHit(memory=record, score=score))
+            if len(results) >= k:
+                break
         return results
+
+    def search_semantic(
+        self,
+        user_id: str,
+        query: str,
+        k: int = 5,
+        categories: Optional[List[str]] = None,
+    ) -> List[SearchHit]:
+        """Alias for search(); semantic (vector) search with optional category filter."""
+        return self.search(user_id=user_id, query=query, k=k, categories=categories)
+
+    def search_text(
+        self,
+        user_id: str,
+        query: str,
+        k: int = 5,
+        categories: Optional[List[str]] = None,
+    ) -> List[SearchHit]:
+        """Full-text (FTS5/BM25) search with optional category filter."""
+        if not query:
+            return []
+        raw = self._metadata.search_text(user_id=user_id, query=query, limit=k * 3 if categories else k)
+        results: List[SearchHit] = []
+        for row, score in raw:
+            record = self._to_record(row)
+            if categories:
+                cat = (record.metadata or {}).get("category")
+                if cat not in categories:
+                    continue
+            results.append(SearchHit(memory=record, score=score))
+            if len(results) >= k:
+                break
+        return results
+
+    def search_hybrid(
+        self,
+        user_id: str,
+        query: str,
+        k: int = 5,
+        categories: Optional[List[str]] = None,
+    ) -> List[SearchHit]:
+        """Combine semantic and text search; normalize scores and merge (0.6 semantic + 0.4 text)."""
+        if not query:
+            return []
+        k_fetch = max(k * 2, 10)
+        sem_hits = self.search_semantic(user_id=user_id, query=query, k=k_fetch, categories=categories)
+        txt_hits = self.search_text(user_id=user_id, query=query, k=k_fetch, categories=categories)
+
+        sem_scores = {h.memory.memory_id: h.score for h in sem_hits}
+        txt_scores = {h.memory.memory_id: h.score for h in txt_hits}
+        all_ids = set(sem_scores) | set(txt_scores)
+
+        def norm(vals: List[float]) -> tuple[float, float]:
+            if not vals:
+                return 0.0, 1.0
+            lo, hi = min(vals), max(vals)
+            span = hi - lo if hi > lo else 1.0
+            return lo, span
+
+        sem_lo, sem_span = norm(list(sem_scores.values()))
+        txt_lo, txt_span = norm(list(txt_scores.values()))
+
+        combined: List[tuple[str, float, MemoryRecord]] = []
+        for mid in all_ids:
+            s = sem_scores.get(mid)
+            t = txt_scores.get(mid)
+            ns = (s - sem_lo) / sem_span if sem_span else 0.0
+            nt = (t - txt_lo) / txt_span if txt_span else 0.0
+            comb = 0.6 * ns + 0.4 * nt
+            record = next((h.memory for h in sem_hits + txt_hits if h.memory.memory_id == mid), None)
+            if record:
+                combined.append((mid, comb, record))
+        combined.sort(key=lambda x: -x[1])
+        return [SearchHit(memory=r, score=score) for _, score, r in combined[:k]]
 
     # ------------------------------------------------------------------
     # Internal helpers

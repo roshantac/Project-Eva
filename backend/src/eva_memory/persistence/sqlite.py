@@ -78,7 +78,47 @@ class SQLiteMetadataStore:
                 ON memories (faiss_id)
                 """
             )
+            cur.execute(
+                """
+                CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts
+                USING fts5(memory_id UNINDEXED, content)
+                """
+            )
             self._conn.commit()
+            self._backfill_fts_if_needed()
+
+    def _backfill_fts_if_needed(self) -> None:
+        """One-time backfill of memories_fts from existing memories if FTS is empty. Caller holds _lock."""
+        cur = self._conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM memories_fts")
+        (count,) = cur.fetchone()
+        if count and count > 0:
+            return
+        cur.execute(
+            "SELECT memory_id, text FROM memories WHERE is_deleted = 0"
+        )
+        rows = cur.fetchall()
+        for (memory_id, text) in rows:
+            if text:
+                cur.execute(
+                    "INSERT INTO memories_fts(memory_id, content) VALUES (?, ?)",
+                    (memory_id, text),
+                )
+        self._conn.commit()
+
+    def _fts_insert(self, memory_id: str, text: str) -> None:
+        """Caller must hold _lock."""
+        if text:
+            self._conn.execute(
+                "INSERT INTO memories_fts(memory_id, content) VALUES (?, ?)",
+                (memory_id, text),
+            )
+            self._conn.commit()
+
+    def _fts_delete(self, memory_id: str) -> None:
+        """Caller must hold _lock."""
+        self._conn.execute("DELETE FROM memories_fts WHERE memory_id = ?", (memory_id,))
+        self._conn.commit()
 
     def _row_to_memory(self, row: sqlite3.Row) -> MemoryRow:
         metadata = json.loads(row["metadata_json"]) if row["metadata_json"] is not None else None
@@ -134,7 +174,9 @@ class SQLiteMetadataStore:
                 (memory_id,),
             )
             row = cur.fetchone()
-            return self._row_to_memory(row)
+            result = self._row_to_memory(row)
+            self._fts_insert(memory_id, text)
+            return result
 
     def update_memory(
         self,
@@ -162,6 +204,8 @@ class SQLiteMetadataStore:
                 return None
 
             self._conn.commit()
+            self._fts_delete(memory_id)
+            self._fts_insert(memory_id, text)
             cur.execute(
                 "SELECT * FROM memories WHERE memory_id = ?",
                 (memory_id,),
@@ -186,6 +230,7 @@ class SQLiteMetadataStore:
                 return None
 
             self._conn.commit()
+            self._fts_delete(memory_id)
             cur.execute(
                 "SELECT * FROM memories WHERE memory_id = ?",
                 (memory_id,),
@@ -238,6 +283,46 @@ class SQLiteMetadataStore:
                 )
             rows = cur.fetchall()
             return [self._row_to_memory(r) for r in rows]
+
+    def search_text(
+        self,
+        user_id: str,
+        query: str,
+        limit: int = 10,
+    ) -> List[tuple[MemoryRow, float]]:
+        """Full-text search via FTS5; returns (row, score) pairs. Higher score is better."""
+        if not query or not query.strip():
+            return []
+        query = query.strip()
+        if not query:
+            return []
+        with self._lock:
+            self._conn.row_factory = sqlite3.Row
+            cur = self._conn.cursor()
+            try:
+                cur.execute(
+                    """
+                    SELECT m.memory_id, m.user_id, m.text, m.metadata_json,
+                           m.faiss_id, m.created_at, m.updated_at, m.is_deleted,
+                           bm25(memories_fts) AS rank
+                    FROM memories m
+                    INNER JOIN memories_fts ON memories_fts.memory_id = m.memory_id
+                    WHERE m.user_id = ? AND m.is_deleted = 0 AND memories_fts MATCH ?
+                    ORDER BY rank
+                    LIMIT ?
+                    """,
+                    (user_id, query, limit),
+                )
+            except sqlite3.OperationalError:
+                return []
+            rows = cur.fetchall()
+            result: List[tuple[MemoryRow, float]] = []
+            for row in rows:
+                mr = self._row_to_memory(row)
+                rank = float(row["rank"]) if "rank" in row.keys() else 0.0
+                score = -rank if rank < 0 else (1.0 / (1.0 + rank))
+                result.append((mr, score))
+            return result
 
     def get_by_faiss_ids(
         self,
