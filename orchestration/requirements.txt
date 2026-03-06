@@ -1,0 +1,15 @@
+# Core dependencies
+requests>=2.31.0
+pydantic>=2.5.0
+python-dotenv>=1.0.0
+
+# Web search (updated package name)
+ddgs>=1.0.0
+
+# Logging and utilities
+colorlog>=6.8.0
+pyyaml>=6.0.1
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
