@@ -20,7 +20,7 @@ class ChatRequest(BaseModel):
     session_id: str | None = Field(None, description="Optional session id to continue")
     system_prompt: str | None = Field(None, description="Optional system prompt")
     model: str = Field(
-        "openai:gpt-5.1-nano",
+        "openai:gpt-4.1-nano",
         description=(
             "LLM model in 'provider:model' format (e.g. 'openai:gpt-4o-mini', "
             "'gemini:gemini-2.5-flash'). If no ':' is present, the value is "
