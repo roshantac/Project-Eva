@@ -220,8 +220,50 @@ def _get_skills_dirs() -> list[Path]:
     return roots
 
 
+def _skill_file_path(skill_dir: Path) -> Path | None:
+    """Return path to SKILL.md or skill.md in skill_dir, or None."""
+    for name in ("SKILL.md", "skill.md"):
+        p = skill_dir / name
+        if p.is_file():
+            return p
+    return None
+
+
+def _extract_frontmatter(content: str) -> str:
+    """Return the YAML block between the first --- and second ---."""
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        return ""
+    return parts[1].strip()
+
+
+def _parse_frontmatter_name_description(frontmatter: str) -> tuple[str, str]:
+    """Parse name and description from frontmatter lines. Returns (name, description)."""
+    name, description = "", ""
+    for line in frontmatter.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if ":" in line:
+            key, _, value = line.partition(":")
+            key, value = key.strip().lower(), value.strip()
+            if key == "name":
+                name = value.strip('"\'')
+            elif key == "description":
+                description = value.strip('"\'')
+    return name, description
+
+
+def _read_skill_content(skill_path: str) -> str | None:
+    """Read SKILL.md content; return None if not found."""
+    try:
+        return Path(skill_path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
 def _list_skill_names() -> list[tuple[str, str]]:
-    """Return (name, path) for each skill (directory containing SKILL.md)."""
+    """Return (name, path) for each skill (directory containing SKILL.md or skill.md)."""
     out: list[tuple[str, str]] = []
     seen: set[str] = set()
     for root in _get_skills_dirs():
@@ -229,8 +271,8 @@ def _list_skill_names() -> list[tuple[str, str]]:
             for d in root.iterdir():
                 if not d.is_dir():
                     continue
-                skill_md = d / "SKILL.md"
-                if skill_md.is_file():
+                skill_md = _skill_file_path(d)
+                if skill_md is not None:
                     name = d.name
                     if name not in seen:
                         seen.add(name)
@@ -240,12 +282,53 @@ def _list_skill_names() -> list[tuple[str, str]]:
     return out
 
 
-def _read_skill_content(skill_path: str) -> str | None:
-    """Read SKILL.md content; return None if not found."""
-    try:
-        return Path(skill_path).read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return None
+def _list_skills_with_meta() -> list[tuple[str, str, str, str]]:
+    """Return (dir_name, path, skill_name, description) for each skill. skill_name/description from frontmatter."""
+    out: list[tuple[str, str, str, str]] = []
+    seen: set[str] = set()
+    for root in _get_skills_dirs():
+        try:
+            for d in root.iterdir():
+                if not d.is_dir():
+                    continue
+                skill_md = _skill_file_path(d)
+                if skill_md is None:
+                    continue
+                dir_name = d.name
+                if dir_name in seen:
+                    continue
+                seen.add(dir_name)
+                content = _read_skill_content(str(skill_md))
+                fm = _extract_frontmatter(content or "")
+                skill_name, description = _parse_frontmatter_name_description(fm)
+                if not skill_name:
+                    skill_name = dir_name
+                out.append((dir_name, str(skill_md), skill_name, description or ""))
+        except OSError:
+            pass
+    return out
+
+
+def get_all_skills_frontmatter() -> str:
+    """Return concatenated frontmatter (text between ---) of all skills for default agent context."""
+    blocks: list[str] = []
+    for root in _get_skills_dirs():
+        try:
+            for d in root.iterdir():
+                if not d.is_dir():
+                    continue
+                skill_md = _skill_file_path(d)
+                if skill_md is None:
+                    continue
+                content = _read_skill_content(str(skill_md))
+                fm = _extract_frontmatter(content or "")
+                if fm:
+                    blocks.append(fm)
+        except OSError:
+            pass
+    if not blocks:
+        return ""
+    return "\n\n---\n\n".join(blocks)
 
 
 @tool(
@@ -258,10 +341,15 @@ def _read_skill_content(skill_path: str) -> str | None:
     },
 )
 async def list_skills(params: dict[str, Any]) -> ToolResult:
-    skills = await asyncio.to_thread(_list_skill_names)
+    skills = await asyncio.to_thread(_list_skills_with_meta)
     if not skills:
         return ToolResult(success=True, content="No skills found. Add skills in project skills/ or ~/.eva/skills/<name>/SKILL.md")
-    lines = [f"- {name}" for name, _ in skills]
+    lines = []
+    for dir_name, _path, skill_name, description in skills:
+        if description:
+            lines.append(f"- **{skill_name}** (`{dir_name}`): {description}")
+        else:
+            lines.append(f"- **{skill_name}** (`{dir_name}`)")
     return ToolResult(success=True, content="Available skills:\n" + "\n".join(lines))
 
 
