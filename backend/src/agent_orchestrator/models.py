@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -69,6 +70,41 @@ class ToolDef:
                 "parameters": self.parameters,
             },
         }
+
+    def to_ollama_tool(self) -> dict[str, Any]:
+        """Alias for to_tool_schema(); kept for backward compatibility."""
+        return self.to_tool_schema()
+
+
+class BaseTool(ABC):
+    """Base class for orchestrator tools."""
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        ...
+
+    @property
+    @abstractmethod
+    def description(self) -> str:
+        ...
+
+    @property
+    @abstractmethod
+    def parameters(self) -> dict[str, Any]:
+        """JSON Schema for parameters."""
+        ...
+
+    @abstractmethod
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
+        ...
+
+    def to_def(self) -> ToolDef:
+        return ToolDef(name=self.name, description=self.description, parameters=self.parameters)
+
+    def to_tool_schema(self) -> dict[str, Any]:
+        """Standard function-calling schema for any LLM provider."""
+        return self.to_def().to_tool_schema()
 
     def to_ollama_tool(self) -> dict[str, Any]:
         """Alias for to_tool_schema(); kept for backward compatibility."""

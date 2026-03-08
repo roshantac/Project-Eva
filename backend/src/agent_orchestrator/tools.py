@@ -7,46 +7,11 @@ import json
 from abc import ABC, abstractmethod
 from typing import Any
 
-from .models import ToolDef, ToolResult
-
-
-class BaseTool(ABC):
-    """Base class for orchestrator tools."""
-
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        ...
-
-    @property
-    @abstractmethod
-    def description(self) -> str:
-        ...
-
-    @property
-    @abstractmethod
-    def parameters(self) -> dict[str, Any]:
-        """JSON Schema for parameters."""
-        ...
-
-    @abstractmethod
-    async def execute(self, params: dict[str, Any]) -> ToolResult:
-        ...
-
-    def to_def(self) -> ToolDef:
-        return ToolDef(name=self.name, description=self.description, parameters=self.parameters)
-
-    def to_tool_schema(self) -> dict[str, Any]:
-        """Standard function-calling schema for any LLM provider."""
-        return self.to_def().to_tool_schema()
-
-    def to_ollama_tool(self) -> dict[str, Any]:
-        """Alias for to_tool_schema(); kept for backward compatibility."""
-        return self.to_tool_schema()
+from .models import BaseTool, ToolDef, ToolResult
 
 
 # ---------------------------------------------------------------------------
-# Example tool: get current time
+# Example tool: get current time (kept for backward compatibility; get_time also in registry)
 # ---------------------------------------------------------------------------
 
 from datetime import datetime, timezone
@@ -263,10 +228,13 @@ class SearchMemoryTool(BaseTool):
 
 
 def get_tools_for_user(user_id: str, memory_client: Any = None) -> list[BaseTool]:
-    """Return the default tool list for a user (includes memory tools bound to user_id)."""
+    """Return the default tool list for a user (includes memory tools and registered built-in tools)."""
+    import src.agent_orchestrator.builtin_tools  # noqa: F401 — triggers tool registration
+    from .tool_registry import get_registered_tools
     client = memory_client or _get_memory_client()
+    registered = get_registered_tools()
     return [
-        GetTimeTool(),
         AddMemoryTool(user_id, client),
         SearchMemoryTool(user_id, client),
+        *registered,
     ]

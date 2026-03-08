@@ -50,4 +50,20 @@ See `agent_orchestrator.config`: `DB_DIR`, `SESSIONS_DIR`, `DEFAULT_MODEL`, `DEF
 
 ## Adding tools
 
-Implement `BaseTool` from `agent_orchestrator.tools` (name, description, parameters as JSON Schema, `async execute(params) -> ToolResult`) and pass a list of instances to `run_loop(..., tools=[...])`.
+**Option 1 — Decorator (recommended):** Use `@tool(name, description, parameters)` from `agent_orchestrator.tool_registry` and register an async function. Registered tools are included automatically in `get_tools_for_user()`.
+
+```python
+from agent_orchestrator.models import ToolResult
+from agent_orchestrator.tool_registry import tool
+
+@tool("my_tool", "Does something useful.", {"type": "object", "properties": {"x": {"type": "string"}}, "required": ["x"]})
+async def my_tool(params: dict) -> ToolResult:
+    return ToolResult(success=True, content=params.get("x", ""))
+```
+
+**Option 2 — Class:** Implement `BaseTool` from `agent_orchestrator.models` (name, description, parameters as JSON Schema, `async execute(params) -> ToolResult`) and pass instances in the tools list to `run_loop(..., tools=[...])`.
+
+## Built-in and skills tools
+
+- **Built-in (registered):** `get_time`, `list_dir`, `search_dir`, `read_file`, `write_file`, `list_skills`, `read_skill`. File paths are relative to the project base (sandboxed).
+- **Skills:** AgentSkills-compatible skills live in `backend/skills/<name>/SKILL.md` or `~/.eva/skills/<name>/SKILL.md`. The agent uses `list_skills` and `read_skill` to discover and load instructions at runtime. See `backend/skills/README.md`.
