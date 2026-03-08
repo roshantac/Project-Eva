@@ -203,8 +203,14 @@ class MemoryStore:
         for mid in all_ids:
             s = sem_scores.get(mid)
             t = txt_scores.get(mid)
-            ns = (s - sem_lo) / sem_span if sem_span else 0.0
-            nt = (t - txt_lo) / txt_span if txt_span else 0.0
+            if s is not None and sem_span:
+                ns = (s - sem_lo) / sem_span
+            else:
+                ns = 0.0
+            if t is not None and txt_span:
+                nt = (t - txt_lo) / txt_span
+            else:
+                nt = 0.0
             comb = 0.6 * ns + 0.4 * nt
             record = next((h.memory for h in sem_hits + txt_hits if h.memory.memory_id == mid), None)
             if record:
