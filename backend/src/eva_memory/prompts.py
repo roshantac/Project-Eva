@@ -3,9 +3,8 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List
 
-from src.llm_core import Message
-
 from .categories import PERSONAL_MEMORY_CATEGORIES
+from .models import Message
 
 
 def build_fact_extraction_messages(transcript: str) -> List[Message]:

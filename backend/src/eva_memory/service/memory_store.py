@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from ..config import MemoryStoreConfig
-from ..embeddings.ollama import OllamaEmbedding
+from ..embeddings import get_embedder
 from ..models import MemoryRecord, SearchHit
 from ..persistence.sqlite import SQLiteMetadataStore
 from ..vector_stores.faiss_store import FaissStore
@@ -21,11 +21,11 @@ class MemoryStore:
     - search
     """
 
-    def __init__(self, config: Optional[MemoryStoreConfig] = None) -> None:
-        self.config = config or MemoryStoreConfig()
+    def __init__(self, config: MemoryStoreConfig) -> None:
+        self.config = config
         self.config.ensure_directories()
 
-        self._embedder = OllamaEmbedding(self.config.ollama)
+        self._embedder = get_embedder(self.config.embedding)
         self._metadata = SQLiteMetadataStore(self.config.sqlite_path)
         self._faiss = FaissStore(self.config.faiss_dir)
 

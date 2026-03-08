@@ -1,3 +1,5 @@
+"""Configuration for the EVA Memory package. Pass when creating the client."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -5,46 +7,56 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-# Align with main_config: memory data under BASE_DIR/db/memory/
-try:
-    from main_config import MEMORY_DIR as _MEMORY_DIR_STR
 
-    BASE_MEMORY_DIR = Path(_MEMORY_DIR_STR)
-except ImportError:
-    # Fallback: backend/db/memory relative to this file
-    BASE_MEMORY_DIR = (
-        Path(__file__).resolve().parent.parent.parent / "db" / "memory"
-    )
+class EmbeddingConfig(BaseModel):
+    """
+    Configuration for embeddings. Provider and model; API key from env.
 
-FAISS_DIR = BASE_MEMORY_DIR / "faiss"
-SQLITE_DIR = BASE_MEMORY_DIR / "sqlite"
-SQLITE_PATH = SQLITE_DIR / "memories.db"
-
-
-class OllamaConfig(BaseModel):
-    """Configuration for the Ollama embedding backend."""
+    Use model string 'provider:model', e.g.:
+    - ollama:nomic-embed-text:latest
+    - openai:text-embedding-3-small
+    API keys: OPENAI_API_KEY for openai (from env).
+    """
 
     model: str = Field(
-        default="nomic-embed-text:latest",
-        description="Embedding model name served by Ollama.",
+        default="ollama:nomic-embed-text:latest",
+        description="Provider and model, e.g. ollama:nomic-embed-text:latest, openai:text-embedding-3-small",
     )
-    base_url: str = Field(
-        default="http://localhost:11434",
-        description="Base URL for the local Ollama server.",
+    base_url: Optional[str] = Field(
+        default=None,
+        description="Base URL for Ollama (default http://localhost:11434). Ignored for openai.",
     )
 
 
-class MemoryStoreConfig(BaseModel):
-    """Top-level configuration for the memory store."""
+class LLMConfig(BaseModel):
+    """Configuration for the LLM used for fact extraction and merge decisions."""
 
-    ollama: OllamaConfig = Field(default_factory=OllamaConfig)
+    model: str = Field(
+        default="openai:gpt-4.1-mini",
+        description="Model string: 'provider:model', e.g. openai:gpt-4.1-mini, ollama:llama3, gemini:gemini-2.5-flash",
+    )
+    max_tokens: Optional[int] = Field(default=None, description="Max tokens for LLM responses.")
+    temperature: float = Field(default=0.2, description="Sampling temperature.")
+
+
+class EvaMemoryConfig(BaseModel):
+    """Top-level configuration for EVA Memory. Declare this when creating the client."""
+
     sqlite_path: Path = Field(
-        default=SQLITE_PATH,
+        ...,
         description="Path to the SQLite database file for memory metadata.",
     )
     faiss_dir: Path = Field(
-        default=FAISS_DIR,
+        ...,
         description="Directory where FAISS index files are stored.",
+    )
+    embedding: EmbeddingConfig = Field(
+        default_factory=EmbeddingConfig,
+        description="Embedding provider and model (e.g. ollama:nomic-embed-text:latest, openai:text-embedding-3-small).",
+    )
+    llm: LLMConfig = Field(
+        default_factory=LLMConfig,
+        description="LLM settings for fact extraction and merge.",
     )
 
     def ensure_directories(self) -> None:
@@ -52,3 +64,39 @@ class MemoryStoreConfig(BaseModel):
         self.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
         self.faiss_dir.mkdir(parents=True, exist_ok=True)
 
+
+# ---------------------------------------------------------------------------
+# Internal: store config and legacy alias
+# ---------------------------------------------------------------------------
+
+class MemoryStoreConfig(BaseModel):
+    """Internal store config (paths + embedding). Built from EvaMemoryConfig."""
+
+    embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
+    sqlite_path: Path = Field(...)
+    faiss_dir: Path = Field(...)
+
+    def ensure_directories(self) -> None:
+        self.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
+        self.faiss_dir.mkdir(parents=True, exist_ok=True)
+
+
+# Legacy alias for code that still references OllamaEmbeddingConfig
+class OllamaEmbeddingConfig(BaseModel):
+    """Legacy: use EmbeddingConfig with model='ollama:nomic-embed-text:latest'."""
+
+    model: str = Field(default="nomic-embed-text:latest")
+    base_url: str = Field(default="http://localhost:11434")
+
+
+OllamaConfig = OllamaEmbeddingConfig
+
+
+__all__ = [
+    "EvaMemoryConfig",
+    "EmbeddingConfig",
+    "LLMConfig",
+    "MemoryStoreConfig",
+    "OllamaEmbeddingConfig",
+    "OllamaConfig",
+]

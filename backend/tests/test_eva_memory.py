@@ -11,9 +11,9 @@ from src.eva_memory.categories import (
     PERSONAL_MEMORY_CATEGORIES,
     normalize_category,
 )
+from src.eva_memory.models import Message
 from src.eva_memory.persistence.sqlite import SQLiteMetadataStore
 from src.eva_memory.prompts import build_fact_extraction_messages, build_update_messages
-from src.llm_core import Message
 
 
 class TestCategories(unittest.TestCase):
@@ -74,9 +74,9 @@ class TestSQLiteFTS(unittest.TestCase):
 
 class TestEngineWithMockedLLM(unittest.IsolatedAsyncioTestCase):
     async def test_infer_and_update_from_messages_empty_transcript_returns_empty(self) -> None:
+        from src.eva_memory.config import MemoryStoreConfig
         from src.eva_memory.engine import LlmAwareMemoryEngine
         from src.eva_memory.service.memory_store import MemoryStore
-        from src.eva_memory.config import MemoryStoreConfig
 
         with tempfile.TemporaryDirectory() as tmp:
             config = MemoryStoreConfig(

@@ -1,14 +1,13 @@
+"""Base type for embedding backends."""
+
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import Literal, Optional
-
-from ..config import OllamaConfig
 
 
 class EmbeddingBase(ABC):
     """Base class for embedding backends used by the memory store."""
-
-    def __init__(self, config: Optional[OllamaConfig] = None) -> None:
-        self.config = config or OllamaConfig()
 
     @abstractmethod
     def embed(
@@ -18,4 +17,3 @@ class EmbeddingBase(ABC):
     ) -> list[float]:
         """Return an embedding vector for the given text."""
         raise NotImplementedError
-

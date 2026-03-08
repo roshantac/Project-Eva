@@ -3,11 +3,9 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Dict, List, Optional
 
-from src.llm_core import Message
-
 from .categories import CATEGORY_LIST, normalize_category
 from .llm_client import MemoryLLMClient
-from .models import ExtractedFact, MemoryChange, MemoryRecord
+from .models import ExtractedFact, MemoryChange, MemoryRecord, Message
 from .prompts import build_fact_extraction_messages, build_update_messages
 from .service.memory_store import MemoryStore
 

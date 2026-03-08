@@ -12,7 +12,7 @@ from src.agent_orchestrator.system_prompt_loader import get_default_system_promp
 from src.agent_orchestrator.tools import get_tools_for_user
 
 try:
-    from src.eva_memory.memory_client import add_turn_background, get_context_sync
+    from src.deps import add_turn_background, get_context_sync
 except ImportError:
     add_turn_background = None
     get_context_sync = None

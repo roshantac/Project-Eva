@@ -73,28 +73,14 @@ class GetTimeTool(BaseTool):
 
 
 # ---------------------------------------------------------------------------
-# Memory tools (require eva_memory in src)
+# Memory tools (use eva_memory MemoryClient from app deps)
 # ---------------------------------------------------------------------------
 
-def _get_memory_store():
-    """Lazy import to avoid circular dependency and allow eva_memory to live under src."""
+def _get_memory_client():
+    """Lazy import: MemoryClient from app deps (config from main_config)."""
     try:
-        from src.eva_memory import MemoryStore
-        from src.eva_memory.config import MemoryStoreConfig
-        return MemoryStore(MemoryStoreConfig())
-    except Exception:
-        return None
-
-
-def _get_memory_engine():
-    """Lazy import for LLM-aware memory engine (used when infer=True)."""
-    try:
-        from src.eva_memory.engine import LlmAwareMemoryEngine
-        from src.eva_memory.llm_client import MemoryLLMClient
-        store = _get_memory_store()
-        if store is None:
-            return None
-        return LlmAwareMemoryEngine(store=store, llm_client=MemoryLLMClient())
+        from src.deps import get_memory_client
+        return get_memory_client()
     except Exception:
         return None
 
@@ -102,9 +88,9 @@ def _get_memory_engine():
 class AddMemoryTool(BaseTool):
     """Store a memory for the user (text and optional metadata). When infer=True, extract facts from messages and update memory via LLM."""
 
-    def __init__(self, user_id: str, store: Any = None):
+    def __init__(self, user_id: str, client: Any = None):
         self._user_id = user_id
-        self._store = store or _get_memory_store()
+        self._client = client or _get_memory_client()
 
     @property
     def name(self) -> str:
@@ -137,13 +123,11 @@ class AddMemoryTool(BaseTool):
         }
 
     async def execute(self, params: dict[str, Any]) -> ToolResult:
-        if self._store is None:
-            return ToolResult(success=False, error="Memory store not available")
+        if self._client is None:
+            return ToolResult(success=False, error="Memory client not available")
         infer = params.get("infer") is True
         if infer:
-            engine = _get_memory_engine()
-            if engine is None:
-                return ToolResult(success=False, error="Memory engine (LLM) not available for infer")
+            from src.eva_memory import Message
             raw_messages = params.get("messages") or []
             if not raw_messages:
                 text = (params.get("text") or "").strip()
@@ -151,11 +135,10 @@ class AddMemoryTool(BaseTool):
                     raw_messages = [{"role": "user", "content": text}]
             if not raw_messages:
                 return ToolResult(success=False, error="When infer is true, provide messages or text")
-            from src.llm_core import Message
             messages = [Message(role=m.get("role", "user"), content=m.get("content") or "") for m in raw_messages]
             category_hint = params.get("category_hint")
             try:
-                changes = await engine.infer_and_update_from_messages(
+                changes = await self._client.add_from_messages(
                     self._user_id, messages, category_hint=category_hint
                 )
                 add_n = sum(1 for c in changes if c.event == "ADD")
@@ -176,7 +159,7 @@ class AddMemoryTool(BaseTool):
                 metadata = None
         try:
             record = await asyncio.to_thread(
-                self._store.add,
+                self._client.add,
                 self._user_id,
                 text,
                 metadata,
@@ -193,9 +176,9 @@ class AddMemoryTool(BaseTool):
 class SearchMemoryTool(BaseTool):
     """Search the user's memories by query. Supports semantic, text, or hybrid mode and optional category filter."""
 
-    def __init__(self, user_id: str, store: Any = None):
+    def __init__(self, user_id: str, client: Any = None):
         self._user_id = user_id
-        self._store = store or _get_memory_store()
+        self._client = client or _get_memory_client()
 
     @property
     def name(self) -> str:
@@ -226,8 +209,8 @@ class SearchMemoryTool(BaseTool):
         }
 
     async def execute(self, params: dict[str, Any]) -> ToolResult:
-        if self._store is None:
-            return ToolResult(success=False, error="Memory store not available")
+        if self._client is None:
+            return ToolResult(success=False, error="Memory client not available")
         query = (params.get("query") or "").strip()
         if not query:
             return ToolResult(success=False, error="query is required")
@@ -245,7 +228,7 @@ class SearchMemoryTool(BaseTool):
         try:
             if mode == "text":
                 hits = await asyncio.to_thread(
-                    self._store.search_text,
+                    self._client.search_text,
                     self._user_id,
                     query,
                     k,
@@ -253,7 +236,7 @@ class SearchMemoryTool(BaseTool):
                 )
             elif mode == "hybrid":
                 hits = await asyncio.to_thread(
-                    self._store.search_hybrid,
+                    self._client.search_hybrid,
                     self._user_id,
                     query,
                     k,
@@ -261,7 +244,7 @@ class SearchMemoryTool(BaseTool):
                 )
             else:
                 hits = await asyncio.to_thread(
-                    self._store.search,
+                    self._client.search,
                     self._user_id,
                     query,
                     k,
@@ -279,11 +262,11 @@ class SearchMemoryTool(BaseTool):
             return ToolResult(success=False, error=str(e))
 
 
-def get_tools_for_user(user_id: str, store: Any = None) -> list[BaseTool]:
+def get_tools_for_user(user_id: str, memory_client: Any = None) -> list[BaseTool]:
     """Return the default tool list for a user (includes memory tools bound to user_id)."""
-    s = store or _get_memory_store()
+    client = memory_client or _get_memory_client()
     return [
         GetTimeTool(),
-        AddMemoryTool(user_id, s),
-        SearchMemoryTool(user_id, s),
+        AddMemoryTool(user_id, client),
+        SearchMemoryTool(user_id, client),
     ]

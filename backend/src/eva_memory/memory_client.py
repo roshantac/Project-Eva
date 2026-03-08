@@ -1,38 +1,175 @@
-"""Memory client: search context before LLM, add turn after response (e.g. in background)."""
+"""Public client for EVA Memory. Create with config, then add / search / update / delete."""
 
 from __future__ import annotations
 
 import asyncio
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
-from src.llm_core import Message
-
+from .config import EvaMemoryConfig, MemoryStoreConfig
 from .engine import LlmAwareMemoryEngine
+from .models import MemoryChange, MemoryRecord, Message, SearchHit
+from .llm_client import MemoryLLMClient
 from .service.memory_store import MemoryStore
 
 
-def get_memory_client() -> Optional["MemoryClient"]:
-    """Lazy singleton memory client (store + engine). Returns None if eva_memory unavailable."""
-    try:
-        from src.eva_memory import MemoryStore
-        from src.eva_memory.config import MemoryStoreConfig
-        from src.eva_memory.engine import LlmAwareMemoryEngine
-        from src.eva_memory.llm_client import MemoryLLMClient
-        config = MemoryStoreConfig()
-        config.ensure_directories()
-        store = MemoryStore(config=config)
-        engine = LlmAwareMemoryEngine(store=store, llm_client=MemoryLLMClient())
-        return MemoryClient(store=store, engine=engine)
-    except Exception:
-        return None
-
-
 class MemoryClient:
-    """Facade for per-turn memory: get context (before LLM) and add turn (after, e.g. in background)."""
+    """
+    Client for EVA Memory. Create with EvaMemoryConfig; then use add, search, update, delete.
 
-    def __init__(self, store: MemoryStore, engine: LlmAwareMemoryEngine) -> None:
-        self._store = store
-        self._engine = engine
+    Example:
+        config = EvaMemoryConfig(
+            sqlite_path=Path("./data/memories.db"),
+            faiss_dir=Path("./data/faiss"),
+        )
+        client = MemoryClient(config=config)
+        client.add(user_id="user1", text="User prefers dark mode")
+        hits = client.search(user_id="user1", query="theme preference", k=5)
+    """
+
+    def __init__(self, config: EvaMemoryConfig) -> None:
+        if not isinstance(config, EvaMemoryConfig):
+            raise TypeError("MemoryClient requires EvaMemoryConfig")
+        config.ensure_directories()
+        store_config = MemoryStoreConfig(
+            embedding=config.embedding,
+            sqlite_path=config.sqlite_path,
+            faiss_dir=config.faiss_dir,
+        )
+        store_config.ensure_directories()
+        self._config = config
+        self._store = MemoryStore(config=store_config)
+        self._engine = LlmAwareMemoryEngine(
+            store=self._store,
+            llm_client=MemoryLLMClient(config=config.llm),
+        )
+
+    # -------------------------------------------------------------------------
+    # Core API: add, search, update, delete, get, list
+    # -------------------------------------------------------------------------
+
+    def add(
+        self,
+        user_id: str,
+        text: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> MemoryRecord:
+        """Add a new memory for the user. Returns the created record."""
+        return self._store.add(user_id=user_id, text=text, metadata=metadata)
+
+    def search(
+        self,
+        user_id: str,
+        query: str,
+        k: int = 5,
+        categories: Optional[List[str]] = None,
+    ) -> List[SearchHit]:
+        """Semantic (vector) search. Optionally filter by metadata category."""
+        return self._store.search(
+            user_id=user_id,
+            query=query,
+            k=k,
+            categories=categories,
+        )
+
+    def update(
+        self,
+        user_id: str,
+        memory_id: str,
+        new_text: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> MemoryRecord:
+        """Update an existing memory's text and optional metadata."""
+        return self._store.update(
+            user_id=user_id,
+            memory_id=memory_id,
+            new_text=new_text,
+            metadata=metadata,
+        )
+
+    def delete(self, user_id: str, memory_id: str) -> None:
+        """Delete a memory (soft delete + vector removal)."""
+        self._store.delete(user_id=user_id, memory_id=memory_id)
+
+    def get(self, user_id: str, memory_id: str) -> Optional[MemoryRecord]:
+        """Get a single memory by id."""
+        return self._store.get(user_id=user_id, memory_id=memory_id)
+
+    def list(
+        self,
+        user_id: str,
+        limit: int = 100,
+        include_deleted: bool = False,
+    ) -> List[MemoryRecord]:
+        """List memories for the user, most recent first."""
+        return self._store.list(
+            user_id=user_id,
+            limit=limit,
+            include_deleted=include_deleted,
+        )
+
+    # -------------------------------------------------------------------------
+    # Search variants
+    # -------------------------------------------------------------------------
+
+    def search_semantic(
+        self,
+        user_id: str,
+        query: str,
+        k: int = 5,
+        categories: Optional[List[str]] = None,
+    ) -> List[SearchHit]:
+        """Alias for search(); semantic (vector) search."""
+        return self.search(user_id=user_id, query=query, k=k, categories=categories)
+
+    def search_text(
+        self,
+        user_id: str,
+        query: str,
+        k: int = 5,
+        categories: Optional[List[str]] = None,
+    ) -> List[SearchHit]:
+        """Full-text (FTS) search with optional category filter."""
+        return self._store.search_text(
+            user_id=user_id,
+            query=query,
+            k=k,
+            categories=categories,
+        )
+
+    def search_hybrid(
+        self,
+        user_id: str,
+        query: str,
+        k: int = 5,
+        categories: Optional[List[str]] = None,
+    ) -> List[SearchHit]:
+        """Hybrid semantic + text search."""
+        return self._store.search_hybrid(
+            user_id=user_id,
+            query=query,
+            k=k,
+            categories=categories,
+        )
+
+    # -------------------------------------------------------------------------
+    # LLM-assisted: add from conversation
+    # -------------------------------------------------------------------------
+
+    async def add_from_messages(
+        self,
+        user_id: str,
+        messages: List[Message],
+        category_hint: Optional[str] = None,
+    ) -> List[MemoryChange]:
+        """
+        Extract facts from messages and merge into memory (add/update/delete).
+        Use after a conversation turn to persist user facts.
+        """
+        return await self._engine.infer_and_update_from_messages(
+            user_id,
+            messages,
+            category_hint=category_hint,
+        )
 
     def get_context(
         self,
@@ -43,92 +180,27 @@ class MemoryClient:
         categories: Optional[List[str]] = None,
     ) -> str:
         """
-        Sync search: run memory search and return a single string to inject into the prompt.
-        Use before the LLM call so the agent has relevant user context.
+        Return a single string of relevant memory lines for prompt injection.
+        Modes: "semantic", "text", "hybrid".
         """
         if not query or not user_id:
             return ""
         if mode == "text":
-            hits = self._store.search_text(user_id=user_id, query=query, k=k, categories=categories)
+            hits = self.search_text(
+                user_id=user_id, query=query, k=k, categories=categories
+            )
         elif mode == "hybrid":
-            hits = self._store.search_hybrid(user_id=user_id, query=query, k=k, categories=categories)
+            hits = self.search_hybrid(
+                user_id=user_id, query=query, k=k, categories=categories
+            )
         else:
-            hits = self._store.search(user_id=user_id, query=query, k=k, categories=categories)
+            hits = self.search(
+                user_id=user_id, query=query, k=k, categories=categories
+            )
         if not hits:
             return ""
         lines = [f"- {h.memory.text}" for h in hits]
         return "Relevant user context:\n" + "\n".join(lines)
 
-    async def add_turn(
-        self,
-        user_id: str,
-        user_message: str,
-        assistant_message: str,
-        category_hint: Optional[str] = None,
-    ) -> None:
-        """
-        Add the last turn to memory with inference (extract facts and merge).
-        Intended to be run in a background task after the HTTP response is sent.
-        """
-        if not user_id:
-            return
-        user_message = (user_message or "").strip()
-        assistant_message = (assistant_message or "").strip()
-        if not user_message and not assistant_message:
-            return
-        messages = [
-            Message(role="user", content=user_message),
-            Message(role="assistant", content=assistant_message),
-        ]
-        await self._engine.infer_and_update_from_messages(
-            user_id, messages, category_hint=category_hint
-        )
 
-
-async def add_turn_background(
-    user_id: str,
-    user_message: str,
-    assistant_message: str,
-    category_hint: Optional[str] = None,
-) -> None:
-    """
-    Standalone background task: get client and add turn. No-op if client unavailable.
-    Use from FastAPI: background_tasks.add_task(add_turn_background, user_id, user_msg, reply).
-    """
-    client = get_memory_client()
-    if client is None:
-        return
-    try:
-        await client.add_turn(
-            user_id=user_id,
-            user_message=user_message,
-            assistant_message=assistant_message,
-            category_hint=category_hint,
-        )
-    except Exception:
-        pass
-
-
-def get_context_sync(
-    user_id: str,
-    query: str,
-    k: int = 5,
-    mode: str = "semantic",
-    categories: Optional[List[str]] = None,
-) -> str:
-    """
-    Sync helper: get memory context string. Returns "" if client unavailable.
-    Run in thread from async code: context = await asyncio.to_thread(get_context_sync, ...).
-    """
-    client = get_memory_client()
-    if client is None:
-        return ""
-    return client.get_context(user_id=user_id, query=query, k=k, mode=mode, categories=categories)
-
-
-__all__ = [
-    "MemoryClient",
-    "get_memory_client",
-    "get_context_sync",
-    "add_turn_background",
-]
+__all__ = ["MemoryClient"]

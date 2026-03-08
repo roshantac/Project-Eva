@@ -5,6 +5,13 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 
+class Message(BaseModel):
+    """A single message for LLM chat (used only inside eva_memory)."""
+
+    role: str  # "system" | "user" | "assistant"
+    content: str = ""
+
+
 class MemoryRecord(BaseModel):
     memory_id: str
     user_id: str
