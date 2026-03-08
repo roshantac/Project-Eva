@@ -28,3 +28,4 @@ db/
 .data/
 *.pyc
 *.db
+data/
