@@ -3,16 +3,19 @@
 EVA is an intelligent, emotion-aware voice assistant that combines natural language processing, emotion detection, and voice synthesis to create a more human-like conversational experience. Built with Python (FastAPI) backend and React frontend, EVA can understand context, remember conversations, and respond with appropriate emotional tones.
 
 ## 👥 Developers
+
 - **Muhammed Roshan P**
 - **Tushar Gupta**
 - **Athvaith**
 
 ## Architecture Diagram
+
 <img width="1523" height="1071" alt="image" src="https://github.com/user-attachments/assets/eb79e02e-e52b-4c20-a680-f26d89ea52e6" />
 
 ## ✨ Features
 
 ### 🎯 Core Capabilities
+
 - **Voice Interaction**: Speak naturally with EVA using voice input and receive voice responses
 - **Text Chat**: Type messages for text-based conversations
 - **Emotion Detection**: Analyzes emotional tone in both text and audio
@@ -20,6 +23,7 @@ EVA is an intelligent, emotion-aware voice assistant that combines natural langu
 - **Multiple Personas**: Switch between different AI personalities (Professional, Friendly, Creative)
 
 ### 🛠️ Smart Tools
+
 - **📅 Calendar Management**: Schedule meetings, view today's calendar, list all meetings
 - **⏰ Reminders**: Set time-based reminders with voice notifications
 - **📝 Notes**: Save, retrieve, and manage notes and lists
@@ -28,15 +32,18 @@ EVA is an intelligent, emotion-aware voice assistant that combines natural langu
 - **💭 Memory Lane**: Store and recall important memories
 
 ### 🎨 Advanced Features
+
 - **Multi-Provider Support**: Works with OpenAI, Ollama, Groq, and more
-- **Flexible Audio**: Local TTS or cloud-based (OpenAI)
+- **Flexible Audio**: Local TTS (eSpeak/Piper) or high-quality client-side TTS (Kokoro)
 - **Real-time Communication**: WebSocket-based for instant responses
 - **Conversation History**: Browse and resume past conversations
 - **Emotion-Aware Responses**: Adjusts tone and voice based on detected emotions
+- **Client-Side TTS**: Optional browser-based Kokoro TTS for superior audio quality
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Python 3.11 or 3.12 (for audio emotion detection) or Python 3.14+ (without audio emotions)
 - Node.js 16+ and npm
 - Ollama (for local LLM) or OpenAI API key (optional)
@@ -54,28 +61,26 @@ chmod +x start.sh
 ./start.sh
 ```
 
-**Interactive Menu Options:**
-1. **Run only (no audio emotions)** - Quick start with Python 3.14
-2. **Run only (with audio emotions)** - Start with Python 3.12 + emotion detection
-3. **Install then run (no emotions)** - Full setup + start
-4. **Install then run (with emotions)** - Full setup with audio emotions + start
+**Interactive Menu (1–10):**
+
+1. Run only (basic) — Python 3.14
+2. Run only (with audio emotions) — Python 3.12
+3. **Run MAX MODE** — Emotions + Kokoro-82M TTS (no install)
+4. Install then run (no emotions)
+5. Install then run (with emotions)
+6. Install Kokoro-82M TTS then run
+7. Install ALL (emotions + Kokoro)
+8. **Install MAX MODE then run** — Full install + run in MAX MODE
+9. Help | 10. Exit
 
 ### Command Line Options
 
 ```bash
-# Quick start (no installation)
-./start.sh
-
-# Install and run without audio emotions
-./start.sh --install
-
-# Install and run with audio emotions (Python 3.12)
-./start.sh --install --with-emotions
-
-# Run with audio emotions (already installed)
-./start.sh --with-emotions
-
-# Show help
+./start.sh                    # Interactive menu (option 3 = MAX MODE)
+./start.sh --with-emotions     # Run with emotions (Python 3.12)
+./start.sh -e -k               # Run MAX MODE: emotions + Kokoro-82M
+./start.sh --install            # Install then run (no emotions)
+./start.sh --install -e -k      # Full install + MAX MODE
 ./start.sh --help
 ```
 
@@ -84,33 +89,46 @@ chmod +x start.sh
 If you prefer manual setup:
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/yourusername/eva-ai.git
 cd eva-ai
 ```
 
 2. **Run installation script**
+
 ```bash
 ./install.sh
 ```
 
 3. **Install Ollama (for local LLM)**
+
 ```bash
 ./install-ollama.sh
 ```
 
-4. **Configure environment**
+4. **Optional: MAX MODE (emotions + Kokoro-82M)**
+
+```bash
+./install-kokoro-local.sh    # High-quality local TTS
+./install-audio-emotion.sh   # Voice emotion detection
+```
+
+5. **Configure environment**
+
 ```bash
 cp .env.example .env
 # Edit .env and add your API keys (optional)
 ```
 
-5. **Start EVA**
+6. **Start EVA**
+
 ```bash
 ./start.sh
 ```
 
 ### Access EVA
+
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:3001
 - **Health Check**: http://localhost:3001/health
@@ -147,9 +165,9 @@ LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama2
 
-# Audio Provider
-AUDIO_PROVIDER=local
-# AUDIO_PROVIDER=openai
+# Audio Provider (local, openai, kokoro)
+AUDIO_PROVIDER=kokoro
+# AUDIO_PROVIDER=kokoro   # MAX MODE: high-quality local TTS
 
 # Weather API (optional)
 # OPENWEATHER_API_KEY=your_openweather_api_key_here
@@ -161,14 +179,18 @@ AUDIO_PROVIDER=local
 ### Provider Options
 
 #### LLM Providers
+
 - **Ollama** (Local, Free): Best for privacy and offline use
 - **OpenAI** (Cloud, Paid): Best quality and features
 - **Groq** (Cloud, Free tier): Fast inference
 - **LM Studio** (Local, Free): Alternative local option
 
 #### Audio Providers
-- **Local** (Free): Uses system TTS, works offline
-- **OpenAI** (Paid): High-quality voice synthesis
+
+- **Kokoro-82M** (Free, Local Python): High-quality local TTS, 54 voices
+- **Kokoro-JS** (Free, Client Browser): Browser-based TTS
+- **Local** (Free): Uses eSpeak/Piper on server, works offline
+- **OpenAI** (Paid): Cloud-based high-quality voice synthesis
 
 ## 📖 Usage Guide
 
@@ -183,6 +205,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 **What it does**: Schedule meetings, view your calendar, and manage appointments with intelligent conflict detection.
 
 **Scheduling Meetings:**
+
 ```
 ✅ Text/Voice Prompts:
 "Schedule a meeting tomorrow at 3pm"
@@ -201,6 +224,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 ```
 
 **Viewing Calendar:**
+
 ```
 ✅ Text/Voice Prompts:
 "What's on my calendar today?"
@@ -218,6 +242,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 ```
 
 **Listing All Meetings:**
+
 ```
 ✅ Text/Voice Prompts:
 "List all my meetings"
@@ -239,6 +264,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 **What it does**: Set time-based reminders with voice notifications when they trigger.
 
 **Setting Reminders:**
+
 ```
 ✅ Text/Voice Prompts:
 "Remind me to call John in 30 minutes"
@@ -256,6 +282,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 ```
 
 **Viewing Reminders:**
+
 ```
 ✅ Text/Voice Prompts:
 "Show my reminders"
@@ -270,6 +297,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 ```
 
 **Managing Reminders:**
+
 ```
 ✅ Text/Voice Prompts:
 "Delete reminder about calling John"
@@ -289,6 +317,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 **What it does**: Save, retrieve, and manage notes, lists, and important information.
 
 **Creating Notes:**
+
 ```
 ✅ Text/Voice Prompts:
 "Save a note called grocery list: milk, eggs, bread, cheese"
@@ -305,6 +334,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 ```
 
 **Retrieving Notes:**
+
 ```
 ✅ Text/Voice Prompts:
 "What's in my grocery list?"
@@ -321,6 +351,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 ```
 
 **Updating Notes:**
+
 ```
 ✅ Text/Voice Prompts:
 "Update grocery list: add tomatoes and onions"
@@ -340,6 +371,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 **What it does**: Get current weather, forecasts, and weather-based recommendations.
 
 **Current Weather:**
+
 ```
 ✅ Text/Voice Prompts:
 "What's the weather in London?"
@@ -357,6 +389,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 ```
 
 **Weather Forecasts:**
+
 ```
 ✅ Text/Voice Prompts:
 "Will it rain tomorrow?"
@@ -372,6 +405,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 ```
 
 **Weather Advice:**
+
 ```
 ✅ Text/Voice Prompts:
 "Should I carry an umbrella?"
@@ -392,6 +426,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 **What it does**: Search the internet for information and get summarized results.
 
 **General Search:**
+
 ```
 ✅ Text/Voice Prompts:
 "Search for latest AI news"
@@ -409,6 +444,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 ```
 
 **Specific Queries:**
+
 ```
 ✅ Text/Voice Prompts:
 "Who won the World Cup 2022?"
@@ -431,6 +467,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 **What it does**: Store and recall important personal memories and information.
 
 **Storing Memories:**
+
 ```
 ✅ Text/Voice Prompts:
 "Remember that I love Italian food"
@@ -447,6 +484,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 ```
 
 **Recalling Memories:**
+
 ```
 ✅ Text/Voice Prompts:
 "What do you remember about me?"
@@ -485,6 +523,7 @@ Choose from different AI personalities to match your needs:
    - Best for: Creative projects, ideation, artistic discussions
 
 **Switching Personas:**
+
 ```
 Use the persona selector in the UI to switch between personalities.
 EVA will adjust its tone, vocabulary, and response style accordingly.
@@ -525,12 +564,14 @@ EVA: "Based on the forecast, there's a 30% chance of rain..."
 EVA processes both the same way, so use whichever is more convenient for you.
 
 **Voice Tips:**
+
 - Speak clearly and at a normal pace
 - Use natural language (no need for robotic commands)
 - EVA detects emotion in your voice and responds accordingly
 - Works in noisy environments with good microphone
 
 **Text Tips:**
+
 - Type naturally as you would in a conversation
 - No special syntax required
 - Supports emojis and casual language
@@ -564,7 +605,6 @@ eva-ai/
 ├── docs/                     # Documentation
 ├── logs/                     # Application logs
 ├── .env.example             # Environment template
-├── .gitignore               # Git ignore rules
 ├── requirements.txt         # Python dependencies
 ├── package.json             # Node.js dependencies
 └── README.md                # This file
@@ -573,6 +613,7 @@ eva-ai/
 ## 🔧 Development
 
 ### Running Tests
+
 ```bash
 # Test calendar service
 python test_calendar_service.py
@@ -613,6 +654,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ### Common Issues
 
 **Issue**: "Module not found" errors
+
 ```bash
 # Solution: Reinstall dependencies
 pip install -r requirements.txt
@@ -620,18 +662,24 @@ cd client && npm install
 ```
 
 **Issue**: Ollama connection failed
+
 ```bash
 # Solution: Make sure Ollama is running
 ollama serve
 ```
 
 **Issue**: Audio not working
+
 ```bash
-# Solution: Check audio provider configuration in .env
+# Solution 1: Check audio provider configuration in .env
 AUDIO_PROVIDER=local  # or openai
+
+# Solution 2: Use high-quality Kokoro TTS (recommended)
+# See KOKORO_TTS_SETUP.md for configuration
 ```
 
 **Issue**: Port already in use
+
 ```bash
 # Solution: Change port in .env
 PORT=3002
@@ -657,6 +705,7 @@ For questions or support, please open an issue on GitHub.
 **Made with ❤️ by the EVA Team**
 
 ## 👥 Development Team
+
 - **Muhammed Roshan P** - Core Development
 - **Tushar Gupta** - Core Development
 - **Athvaith** - Core Development

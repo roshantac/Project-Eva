@@ -25,5 +25,8 @@
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "kokoro-js": "^1.2.1"
   }
 }

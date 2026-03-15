@@ -42,6 +42,7 @@ class SessionData:
         self.audio_disabled = False
         self.is_processing = False
         self.conversation_created = False
+        self.client_tts_enabled = False
 
 
 class SocketHandler:
@@ -90,6 +91,9 @@ class SocketHandler:
             return bool(openai_key and openai_key != 'your_openai_api_key_here')
         elif audio_provider == 'local':
             # Local audio is always available (uses whisper-cli + espeak)
+            return True
+        elif audio_provider == 'kokoro':
+            # Kokoro-82M local TTS is always available
             return True
         
         return False
@@ -152,6 +156,10 @@ class SocketHandler:
         @self.sio.on('CONVERSATION_DELETE')
         async def on_conversation_delete(sid: str, data: dict):
             await self.handle_conversation_delete(sid, data)
+        
+        @self.sio.on('CLIENT_TTS_ENABLED')
+        async def on_client_tts_enabled(sid: str, data: dict):
+            await self.handle_client_tts_enabled(sid, data)
     
     async def handle_connection(self, sid: str, environ: dict):
         """Handle new WebSocket connection"""
@@ -738,6 +746,11 @@ class SocketHandler:
     async def generate_and_stream_audio(self, sid: str, text: str, emotion: str):
         """Generate and stream audio response"""
         try:
+            session = self.active_sessions.get(sid)
+            if session and session.client_tts_enabled:
+                logger.info('Client TTS enabled - skipping server-side audio generation')
+                return
+            
             if not self.audio_enabled or not self.tts_service:
                 logger.warning('Audio output disabled - TTS service not available')
                 return
@@ -1052,6 +1065,21 @@ class SocketHandler:
                 },
                 to=sid
             )
+    
+    async def handle_client_tts_enabled(self, sid: str, data: dict):
+        """Handle client TTS enabled notification"""
+        try:
+            session = self.active_sessions.get(sid)
+            if not session:
+                return
+            
+            enabled = data.get('enabled', False)
+            session.client_tts_enabled = enabled
+            
+            logger.info(f"Client TTS {'enabled' if enabled else 'disabled'} for session {sid}")
+            
+        except Exception as error:
+            logger.error(f"Error handling client TTS enabled: {error}")
     
     async def handle_disconnect(self, sid: str):
         """Handle client disconnect"""

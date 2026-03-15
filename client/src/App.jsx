@@ -3,6 +3,7 @@ import { Brain, MessageCircle, Clock, Wifi, WifiOff } from 'lucide-react';
 import { useSocket, useSocketEvent } from './hooks/useSocket';
 import { useAudioRecorder } from './hooks/useAudioRecorder';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
+import kokoroTTSService from './services/kokoroTTSService';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import ControlPanel from './components/ControlPanel';
@@ -25,6 +26,9 @@ function App() {
   const [notification, setNotification] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  
+  const ttsProvider = import.meta.env.VITE_TTS_PROVIDER || 'server';
+  const useClientTTS = ttsProvider === 'kokoro';
 
   const messagesEndRef = useRef(null);
   const recordingTimerRef = useRef(null);
@@ -62,7 +66,7 @@ function App() {
     }
   }, [isProcessing]));
 
-  useSocketEvent('BOT_TEXT_RESPONSE', useCallback((data) => {
+  useSocketEvent('BOT_TEXT_RESPONSE', useCallback(async (data) => {
     setMessages(prev => [...prev, {
       text: data.text,
       isUser: false,
@@ -70,9 +74,23 @@ function App() {
       persona: data.persona,
       timestamp: new Date()
     }]);
+    
+    if (useClientTTS && !audioDisabled && outputMode === 'voice') {
+      try {
+        console.log('🎤 Generating client-side TTS with Kokoro...');
+        setProcessingStatus('Generating speech...');
+        const audioBlob = await kokoroTTSService.generateSpeech(data.text, data.emotion);
+        queueAudioChunk(audioBlob);
+        console.log('✅ Client-side TTS complete');
+      } catch (error) {
+        console.error('❌ Error generating client-side TTS:', error);
+        showNotification('Failed to generate speech', 'error');
+      }
+    }
+    
     setIsProcessing(false);
     setProcessingStatus('');
-  }, []));
+  }, [useClientTTS, audioDisabled, outputMode, queueAudioChunk, showNotification]));
 
   useSocketEvent('BOT_AUDIO_STREAM', useCallback((data) => {
     console.log('🔊 BOT_AUDIO_STREAM received:', {
@@ -179,22 +197,26 @@ function App() {
     // Set audio availability based on server capabilities
     const serverAudioEnabled = data.audioEnabled !== false;
     if (data.audioEnabled !== undefined) {
-      setAudioDisabled(!data.audioEnabled);
-      if (data.audioEnabled) {
-        showNotification(`Audio enabled (${data.audioProvider || 'local'})`, 'success');
+      setAudioDisabled(!data.audioEnabled && !useClientTTS);
+      if (data.audioEnabled || useClientTTS) {
+        const provider = useClientTTS ? 'Kokoro (client)' : (data.audioProvider || 'local');
+        showNotification(`Audio enabled (${provider})`, 'success');
       }
     }
-    // When audio is enabled, use voice output so server sends both text + audio
-    const outMode = serverAudioEnabled ? 'voice' : 'text';
+    // When audio is enabled (server or client), use voice output mode
+    const outMode = (serverAudioEnabled || useClientTTS) ? 'voice' : 'text';
     setOutputMode(outMode);
     if (socket) {
-      socket.changeMode(inputMode, outMode, !serverAudioEnabled);
+      socket.changeMode(inputMode, outMode, !serverAudioEnabled && !useClientTTS);
+      if (useClientTTS) {
+        socket.emit('CLIENT_TTS_ENABLED', { enabled: true });
+      }
     }
     // If resuming an existing conversation, load its messages
     if (data.isResumed && socket) {
       socket.emit('CONVERSATION_LOAD', { sessionId: data.sessionId });
     }
-  }, [socket, showNotification, inputMode]));
+  }, [socket, showNotification, inputMode, useClientTTS]));
 
   useSocketEvent('CONVERSATION_LOADED', useCallback((data) => {
     // Clear current messages and load conversation history

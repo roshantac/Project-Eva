@@ -23,9 +23,13 @@ class LocalAudioProvider:
         )
         
         # eSpeak settings
+        self.espeak_enabled = os.getenv('ESPEAK_ENABLED', 'true').lower() == 'true'
         self.espeak_path = os.getenv('ESPEAK_PATH', 'espeak')
         # OpenAI voice names passed by TTS service; eSpeak uses codes like en-us, en-gb
         self._openai_voice_names = {'alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'}
+        
+        # Client TTS settings
+        self.client_tts_enabled = os.getenv('CLIENT_TTS_ENABLED', 'false').lower() == 'true'
         
         # Debug settings
         self.keep_temp_audio = os.getenv('KEEP_TEMP_AUDIO', 'false').lower() == 'true'
@@ -224,12 +228,24 @@ class LocalAudioProvider:
             options = {}
         
         try:
+            logger.info(f'🔊 LocalAudioProvider.generate_speech called (espeak_enabled={self.espeak_enabled}, client_tts={self.client_tts_enabled})')
+            
+            if self.client_tts_enabled:
+                logger.info('Client TTS enabled - skipping server-side TTS')
+                return b''
+            
             # Try Piper first (better quality)
             if await self.is_piper_available():
+                logger.info('Using Piper for TTS')
                 return await self.generate_speech_with_piper(text, options)
             
-            # Fallback to eSpeak (simple but works)
-            return await self.generate_speech_with_espeak(text, options)
+            # Fallback to eSpeak if enabled
+            if self.espeak_enabled:
+                logger.info('Using eSpeak for TTS')
+                return await self.generate_speech_with_espeak(text, options)
+            
+            logger.warning('No TTS provider available (eSpeak disabled, Piper not available)')
+            return b''
         except Exception as error:
             logger.error(f'Error generating speech: {error}')
             raise
@@ -362,11 +378,19 @@ class LocalAudioProvider:
         return True
 
     def get_provider_info(self) -> Dict[str, Any]:
+        tts_options = []
+        if not self.client_tts_enabled:
+            tts_options.append('Piper (local)')
+            if self.espeak_enabled:
+                tts_options.append('eSpeak (local)')
+        else:
+            tts_options.append('Client-side (Kokoro)')
+        
         return {
             'name': self.name,
             'type': 'local',
             'cost': 'free',
             'stt_options': ['Whisper CLI (local)', 'Groq Whisper (free cloud)'],
-            'tts_options': ['Piper (local)', 'eSpeak (local)'],
-            'note': 'Requires local installation of tools'
+            'tts_options': tts_options,
+            'note': 'Requires local installation of tools' if not self.client_tts_enabled else 'Client-side TTS enabled'
         }

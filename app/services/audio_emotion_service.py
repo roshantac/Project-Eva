@@ -7,6 +7,7 @@ NOTE: Requires Python 3.11-3.13 (PyTorch not yet available for Python 3.14)
 
 import os
 import sys
+import warnings
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -83,17 +84,39 @@ class AudioEmotionService:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             logger.info(f'   Using device: {self.device}')
             
-            # Load feature extractor and model
-            logger.debug('   Loading feature extractor...')
-            self.feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(
-                self.model_name,
-                trust_remote_code=True
-            )
-            logger.debug('   Loading model...')
-            self.model = Wav2Vec2ForSequenceClassification.from_pretrained(
-                self.model_name,
-                trust_remote_code=True
-            )
+            # Suppress expected transformers/model loading warnings and verbose logs
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', message='.*gradient_checkpointing.*', category=UserWarning)
+                warnings.filterwarnings('ignore', message='.*Some weights of the model checkpoint.*')
+                warnings.filterwarnings('ignore', message='.*were not used when initializing.*')
+                warnings.filterwarnings('ignore', message='.*were not initialized from the model checkpoint.*')
+                warnings.filterwarnings('ignore', message='.*You should probably TRAIN this model.*')
+                # Lower transformers logging so "Some weights..." / "You should probably TRAIN..." don't print
+                _prev_verbosity = None
+                try:
+                    from transformers import logging as tr_logging
+                    _prev_verbosity = tr_logging.get_verbosity()
+                    tr_logging.set_verbosity_error()
+                except Exception:
+                    pass
+                try:
+                    # Load feature extractor and model
+                    logger.debug('   Loading feature extractor...')
+                    self.feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(
+                        self.model_name,
+                        trust_remote_code=True
+                    )
+                    logger.debug('   Loading model...')
+                    self.model = Wav2Vec2ForSequenceClassification.from_pretrained(
+                        self.model_name,
+                        trust_remote_code=True
+                    )
+                finally:
+                    if _prev_verbosity is not None:
+                        try:
+                            tr_logging.set_verbosity(_prev_verbosity)
+                        except Exception:
+                            pass
             self.model.to(self.device)
             self.model.eval()
             

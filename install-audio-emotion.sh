@@ -181,8 +181,10 @@ print('   Audio emotion detection is ready to use!')
         echo "✅ Text emotion detection (keywords + LLM)"
         echo "✅ Audio emotion detection (wav2vec2)"
         echo "✅ Voice input (Whisper transcription)"
-        echo "✅ Voice output (eSpeak TTS)"
+        echo "✅ Voice output (eSpeak TTS or Kokoro TTS)"
         echo "✅ Multi-modal emotion (text + voice)"
+        echo ""
+        echo "💡 Tip: For better TTS quality, use Kokoro (server or client-side):"
         echo ""
         echo "📝 Next Steps:"
         if [ -d "venv-py312" ]; then

@@ -8,12 +8,22 @@ import sys
 import signal
 import asyncio
 import logging
+from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import socketio
 from dotenv import load_dotenv
+
+# Load .env first, before any app imports that read os.getenv (e.g. audio_emotion_service, tts_service).
+# Prefer cwd (where start.sh / uvicorn was started) so we use the correct project .env.
+_cwd_env = Path(os.getcwd()) / '.env'
+_file_root = Path(__file__).resolve().parent.parent
+_file_env = _file_root / '.env'
+_env_path = _cwd_env if _cwd_env.exists() else _file_env
+# override=True so this project's .env wins over any existing env (e.g. from another directory/shell)
+load_dotenv(dotenv_path=_env_path, override=True)
 
 from app.config.database import connect_database, connect_redis, disconnect_databases
 from app.config.constants import WebSocketEvents
@@ -29,8 +39,9 @@ from app.engines.memory_engine import MemoryEngine
 from app.engines.tool_engine import ToolEngine
 from app.utils.logger import logger
 
-# Load environment variables
-load_dotenv()
+# Debug (after logger is available)
+logger.info(f'🔍 DEBUG: Loaded .env from: {_env_path}')
+logger.info(f'🔍 DEBUG: AUDIO_PROVIDER="{os.getenv("AUDIO_PROVIDER", "NOT_SET")}", AUDIO_EMOTION_ENABLED="{os.getenv("AUDIO_EMOTION_ENABLED", "NOT_SET")}"')
 
 
 def _suppress_cancelled_error_in_uvicorn(record: logging.LogRecord) -> bool:
@@ -88,7 +99,9 @@ async def lifespan(app: FastAPI):
     # Initialize services
     llm_service = LLMService()
     stt_service = STTService()
+    logger.info("🔧 Initializing TTS Service...")
     tts_service = TTSService()
+    logger.info(f"✅ TTS Service initialized with provider: {tts_service.provider.name}")
     weather_service = WeatherService()
     
     # Initialize engines

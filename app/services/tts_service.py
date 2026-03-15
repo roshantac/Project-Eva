@@ -3,7 +3,7 @@ import re
 import logging
 from typing import Optional, Dict, Any, List, AsyncGenerator
 
-from .audio_providers import OpenAIAudioProvider, LocalAudioProvider
+from .audio_providers import OpenAIAudioProvider, LocalAudioProvider, KokoroAudioProvider
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +24,28 @@ class TTSService:
         logger.info(f'TTS Provider initialized: {self.provider.name}')
 
     def initialize_provider(self):
+        # Debug: Print all audio-related environment variables
+        logger.info('🔍 === ENVIRONMENT VARIABLES DEBUG ===')
+        logger.info(f'  AUDIO_PROVIDER = "{os.getenv("AUDIO_PROVIDER", "NOT_SET")}"')
+        logger.info(f'  AUDIO_ENABLED = "{os.getenv("AUDIO_ENABLED", "NOT_SET")}"')
+        logger.info(f'  ESPEAK_ENABLED = "{os.getenv("ESPEAK_ENABLED", "NOT_SET")}"')
+        logger.info(f'  CLIENT_TTS_ENABLED = "{os.getenv("CLIENT_TTS_ENABLED", "NOT_SET")}"')
+        logger.info(f'  KOKORO_LANG_CODE = "{os.getenv("KOKORO_LANG_CODE", "NOT_SET")}"')
+        logger.info(f'  KOKORO_DEFAULT_VOICE = "{os.getenv("KOKORO_DEFAULT_VOICE", "NOT_SET")}"')
+        logger.info('🔍 === END DEBUG ===')
+        
         audio_provider = os.getenv('AUDIO_PROVIDER', 'local').lower()
+        logger.info(f'🔧 Initializing TTS provider: AUDIO_PROVIDER="{audio_provider}" (raw: "{os.getenv("AUDIO_PROVIDER", "NOT_SET")}")')
         
         if audio_provider == 'openai' and os.getenv('OPENAI_API_KEY'):
+            logger.info('✅ Using OpenAI TTS provider')
             return OpenAIAudioProvider()
+        elif audio_provider == 'kokoro':
+            logger.info('✅ Using Kokoro-82M TTS provider')
+            return KokoroAudioProvider()
         
-        # Default to local
+        # Default to local (eSpeak/Piper)
+        logger.info(f'⚠️  Using Local TTS provider (eSpeak/Piper) - audio_provider was "{audio_provider}"')
         return LocalAudioProvider()
 
     async def generate_speech(self, text: str, options: Optional[Dict[str, Any]] = None) -> bytes:
@@ -47,6 +63,15 @@ class TTSService:
             options = {}
         
         try:
+            logger.info(f'🎯 generate_emotional_speech called with provider: {self.provider.name} (type: {type(self.provider).__name__})')
+            
+            # Check if provider has its own emotional speech method
+            if isinstance(self.provider, KokoroAudioProvider):
+                logger.info('✅ Using Kokoro provider for emotional speech')
+                return await self.provider.generate_emotional_speech(text, emotion, options)
+            
+            # Fallback to generic voice mapping (for OpenAI/Local)
+            logger.info(f'Using generic voice mapping for provider: {self.provider.name}')
             voice = self.emotional_voices.get(emotion, 'nova')
             
             speed = 1.0

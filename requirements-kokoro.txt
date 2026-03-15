@@ -1,0 +1,13 @@
+# Kokoro-82M TTS Requirements
+# Install with: pip install -r requirements-kokoro.txt
+
+# Kokoro TTS (high-quality local TTS)
+kokoro>=0.9.4
+
+# Audio I/O (already in main requirements.txt, but listed here for clarity)
+soundfile>=0.12.1
+
+# Optional: PyTorch for GPU acceleration (significantly faster)
+# Uncomment if you have a GPU:
+# torch>=2.2.0
+# Note: Kokoro works on CPU too, just slower
