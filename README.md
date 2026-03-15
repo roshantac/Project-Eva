@@ -1,8 +1,11 @@
 # EVA - Emotional Voice Assistant 🤖🎙️
 
-**Developed by:** **Muhammed Roshan P, Tushar Gupta, Athvaith**
-
 EVA is an intelligent, emotion-aware voice assistant that combines natural language processing, emotion detection, and voice synthesis to create a more human-like conversational experience. Built with Python (FastAPI) backend and React frontend, EVA can understand context, remember conversations, and respond with appropriate emotional tones.
+
+## 👥 Developers
+- **Muhammed Roshan P**
+- **Tushar Gupta**
+- **Athvaith**
 
 ## Architecture Diagram
 <img width="1523" height="1071" alt="image" src="https://github.com/user-attachments/assets/eb79e02e-e52b-4c20-a680-f26d89ea52e6" />
@@ -34,11 +37,51 @@ EVA is an intelligent, emotion-aware voice assistant that combines natural langu
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.11 or 3.12 (for audio emotion detection)
+- Python 3.11 or 3.12 (for audio emotion detection) or Python 3.14+ (without audio emotions)
 - Node.js 16+ and npm
-- Ollama (for local LLM) or OpenAI API key
+- Ollama (for local LLM) or OpenAI API key (optional)
+- FFmpeg (for audio conversion)
 
-### Installation
+### Easy Installation & Startup
+
+EVA provides an interactive startup script that handles everything:
+
+```bash
+# Make the script executable (first time only)
+chmod +x start.sh
+
+# Run the interactive menu
+./start.sh
+```
+
+**Interactive Menu Options:**
+1. **Run only (no audio emotions)** - Quick start with Python 3.14
+2. **Run only (with audio emotions)** - Start with Python 3.12 + emotion detection
+3. **Install then run (no emotions)** - Full setup + start
+4. **Install then run (with emotions)** - Full setup with audio emotions + start
+
+### Command Line Options
+
+```bash
+# Quick start (no installation)
+./start.sh
+
+# Install and run without audio emotions
+./start.sh --install
+
+# Install and run with audio emotions (Python 3.12)
+./start.sh --install --with-emotions
+
+# Run with audio emotions (already installed)
+./start.sh --with-emotions
+
+# Show help
+./start.sh --help
+```
+
+### Manual Installation (Alternative)
+
+If you prefer manual setup:
 
 1. **Clone the repository**
 ```bash
@@ -46,40 +89,31 @@ git clone https://github.com/yourusername/eva-ai.git
 cd eva-ai
 ```
 
-2. **Set up environment variables**
+2. **Run installation script**
+```bash
+./install.sh
+```
+
+3. **Install Ollama (for local LLM)**
+```bash
+./install-ollama.sh
+```
+
+4. **Configure environment**
 ```bash
 cp .env.example .env
-# Edit .env and add your API keys
+# Edit .env and add your API keys (optional)
 ```
 
-3. **Install dependencies**
+5. **Start EVA**
 ```bash
-# Backend
-pip install -r requirements.txt
-
-# Frontend
-cd client
-npm install
-cd ..
-```
-
-4. **Run the application**
-```bash
-# Option 1: Use the start script
 ./start.sh
-
-# Option 2: Manual start
-# Terminal 1 - Backend
-python run.py
-
-# Terminal 2 - Frontend
-cd client
-npm run dev
 ```
 
-5. **Access EVA**
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3001
+### Access EVA
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:3001
+- **Health Check**: http://localhost:3001/health
 
 ## ⚙️ Configuration
 
@@ -307,7 +341,12 @@ For questions or support, please open an issue on GitHub.
 
 ---
 
-**Made with ❤️ by Bob**
+**Made with ❤️ by the EVA Team**
+
+## 👥 Development Team
+- **Muhammed Roshan P** - Core Development
+- **Tushar Gupta** - Core Development
+- **Athvaith** - Core Development
 
 ## 🎯 Roadmap
 
