@@ -1,5 +1,7 @@
 # EVA - Emotional Voice Assistant 🤖🎙️
 
+**Developed by:** **Muhammed Roshan P, Tushar Gupta, Athvaith**
+
 EVA is an intelligent, emotion-aware voice assistant that combines natural language processing, emotion detection, and voice synthesis to create a more human-like conversational experience. Built with Python (FastAPI) backend and React frontend, EVA can understand context, remember conversations, and respond with appropriate emotional tones.
 
 ## Architecture Diagram
