@@ -303,6 +303,29 @@ class MemoryEngine:
             logger.error(f'Error retrieving long-term memories: {error}')
             return []
     
+    def _memory_relevance_score(self, memory: Dict[str, Any], query_words: List[str]) -> int:
+        """
+        Score memory by query words. Title matches rank much higher so e.g.
+        "Reminding User of Mom's Birthday" beats a memory that only mentions mom in content.
+        """
+        if not query_words:
+            return 0
+        title = ((memory.get('title') or '') + ' ').lower()
+        summary = ((memory.get('summary') or '') + ' ').lower()
+        content = ((memory.get('content') or '') + ' ').lower()
+        score = 0
+        for w in query_words:
+            if not w or len(w) < 2:
+                continue
+            wl = w.lower()
+            if wl in title:
+                score += 10
+            if wl in summary:
+                score += 3
+            if wl in content:
+                score += 1
+        return score
+
     async def get_relevant_memories(
         self,
         user_id: str,
@@ -310,43 +333,55 @@ class MemoryEngine:
         limit: int = 5
     ) -> List[Dict[str, Any]]:
         """
-        Get relevant memories based on importance
-        
-        Args:
-            user_id: User identifier
-            current_context: Current conversation context
-            limit: Maximum number of memories to return
-            
-        Returns:
-            List of relevant memory documents
+        Get relevant memories for the user. Uses keyword matching from current_context
+        when provided; otherwise returns most recent by importance and date.
+        Works with both MongoDB and file-based DB (no $gte filter).
         """
         try:
             memories_collection = self._get_collection('memories')
-            
-            cursor = memories_collection.find(
-                {'userId': user_id, 'importance': {'$gte': 6}}
-            ).sort('importance', -1).limit(limit + 1)
-            
-            memories = await cursor.to_list(length=limit + 1)
-            
+            # Query by userId only so file DB works (no $gte)
+            cursor = memories_collection.find({'userId': user_id})
+            # Fetch more so we can rank by relevance; sort by importance (file DB supports single key)
+            memories = await cursor.sort('importance', -1).to_list(length=50)
+
             if not memories:
+                logger.debug(f'No long-term memories found for user_id={user_id}')
                 return []
-            
-            relevant_memories = memories[:limit]
-            
+
+            for m in memories:
+                if '_id' in m and not isinstance(m['_id'], str):
+                    m['_id'] = str(m['_id'])
+
+            # If we have current message, prefer memories that mention similar words (e.g. "mom birthday" -> "Mom's Birthday")
+            query_words = []
+            if current_context and isinstance(current_context, str):
+                query_words = [w.strip() for w in current_context.replace("'", " ").split() if len(w.strip()) > 1]
+
+            if query_words:
+                scored = [(self._memory_relevance_score(m, query_words), m) for m in memories]
+                scored.sort(key=lambda x: (-x[0], -(x[1].get('importance') or 0)))
+                relevant_memories = [m for s, m in scored if s > 0][:limit]
+                # If no keyword match, fall back to top by importance
+                if not relevant_memories:
+                    relevant_memories = [m for _, m in scored[:limit]]
+                if relevant_memories and scored[0][0] > 0:
+                    logger.info(f'Memory Lane: using {len(relevant_memories)} relevant memories for query (top match: "{relevant_memories[0].get("title", "")}")')
+            else:
+                relevant_memories = memories[:limit]
+
+            # Update access metadata (best-effort; file DB supports update_one)
             for memory in relevant_memories:
-                if '_id' in memory:
-                    memory['_id'] = str(memory['_id'])
-                
-                metadata = memory.get('metadata', {})
+                metadata = memory.get('metadata', {}) or {}
                 metadata['accessCount'] = metadata.get('accessCount', 0) + 1
                 metadata['lastAccessed'] = datetime.utcnow()
-                
-                await memories_collection.update_one(
-                    {'_id': memory['_id']},
-                    {'$set': {'metadata': metadata}}
-                )
-            
+                try:
+                    await memories_collection.update_one(
+                        {'_id': memory['_id']},
+                        {'$set': {'metadata': metadata}}
+                    )
+                except Exception:
+                    pass
+
             return relevant_memories
         except Exception as error:
             logger.error(f'Error getting relevant memories: {error}')
@@ -562,29 +597,29 @@ If no important moment, respond with: {{"hasImportantMoment": false}}"""
         except Exception as error:
             logger.error(f'Error updating persona in memory: {error}')
     
-    async def get_memory_context(self, user_id: str, limit: int = 3) -> str:
+    async def get_memory_context(self, user_id: str, limit: int = 8, current_message: str = '') -> str:
         """
-        Get memory context for LLM prompt
-        
-        Args:
-            user_id: User identifier
-            limit: Maximum number of memories to include
-            
-        Returns:
-            Formatted memory context string
+        Get memory context for LLM prompt. Pass current_message so relevant
+        memories (e.g. "Mom's Birthday" when user asks about mom) are included.
         """
         try:
-            relevant_memories = await self.get_relevant_memories(user_id, '', limit)
-            
+            relevant_memories = await self.get_relevant_memories(user_id, current_message or '', limit)
             if not relevant_memories:
+                logger.debug(f'get_memory_context: no memories for user_id={user_id}')
                 return ''
-            
-            context = '\n'.join([
-                f"[Past memory: {mem.get('title')}] {mem.get('summary') or mem.get('content', '')[:200]}"
-                for mem in relevant_memories
-            ])
-            
-            return f"\n\nRelevant past memories:\n{context}"
+            # Prefer content over summary so exact dates/facts (e.g. "August 5th") are in the prompt
+            lines = []
+            for mem in relevant_memories:
+                content = mem.get('content') or mem.get('summary') or ''
+                if len(content) > 500:
+                    content = content[:500] + '...'
+                lines.append(f"- [{mem.get('title') or 'Untitled'}]: {content}")
+            context = '\n'.join(lines)
+            return (
+                "\n\n--- RELEVANT MEMORIES (use these to answer; state the exact date or fact when it appears below) ---\n"
+                + context
+                + "\n--- END MEMORIES ---"
+            )
         except Exception as error:
             logger.error(f'Error getting memory context: {error}')
             return ''

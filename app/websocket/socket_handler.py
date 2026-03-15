@@ -3,10 +3,22 @@ WebSocket handler for managing real-time communication with clients
 """
 
 import os
+import re
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 import socketio
 from datetime import datetime
+
+
+def _serialize_memory_for_emit(obj: Any) -> Any:
+    """Make memory dict JSON-serializable for WebSocket emit (datetime -> iso string)."""
+    if isinstance(obj, datetime):
+        return obj.isoformat() + 'Z' if not obj.isoformat().endswith('Z') else obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: _serialize_memory_for_emit(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_serialize_memory_for_emit(x) for x in obj]
+    return obj
 
 from app.config.constants import WebSocketEvents, CommunicationMode
 from app.utils.helpers import sanitize_input, generate_session_id, validate_audio_chunk
@@ -222,6 +234,41 @@ class SocketHandler:
                 to=sid
             )
     
+    @staticmethod
+    def _parse_save_to_memory(message: str) -> Optional[Tuple[str, str]]:
+        """
+        Detect 'save to memory' / 'remember' intent and return (title, content).
+        Examples: "Save to memory: my anniversary is June 15th", "Remember that my wife's name is Sarah"
+        """
+        if not message or len(message) < 10:
+            return None
+        raw = message.strip().strip('"\'')
+        lower = raw.lower()
+        content = None
+        # "Save to memory: X" or "save to memory X"
+        m = re.search(r'save\s+to\s+memory\s*:\s*(.+)', lower, re.IGNORECASE | re.DOTALL)
+        if m:
+            content = raw[m.start(1):m.end(1)].strip()  # use original case
+        if not content and re.search(r'remember\s+that\s+', lower):
+            m = re.search(r'remember\s+that\s+(.+)', raw, re.IGNORECASE | re.DOTALL)
+            if m:
+                content = m.group(1).strip()
+        if not content and re.search(r'store\s+(?:this\s+)?(?:in\s+)?memory\s*[:\.]?\s*', lower):
+            m = re.search(r'store\s+(?:this\s+)?(?:in\s+)?memory\s*[:\.]?\s*(.+)', raw, re.IGNORECASE | re.DOTALL)
+            if m:
+                content = m.group(1).strip()
+        if not content:
+            return None
+        if not content or len(content) < 2:
+            return None
+        # Title: first ~50 chars of content, or a short summary
+        title = content[:60].strip()
+        if len(content) > 60:
+            title = title.rsplit(maxsplit=1)[0] if title.count(' ') else title
+        if not title:
+            title = 'Saved memory'
+        return (title, content)
+    
     async def handle_user_text(self, sid: str, data: dict):
         """Handle text message from user"""
         try:
@@ -274,6 +321,25 @@ class SocketHandler:
                 emotion_data.get('emotion', 'neutral'),
                 emotion_data.get('sentiment', 'neutral')
             )
+            
+            # If user said "Save to memory: ..." or "Remember that ...", persist to Memory Lane
+            save_memory = self._parse_save_to_memory(user_message)
+            if save_memory:
+                title, content = save_memory
+                try:
+                    memory = await self.memory_engine.save_long_term_memory(
+                        session.session_id,
+                        session.user_id,
+                        {'title': title, 'content': content}
+                    )
+                    await self.sio.emit(
+                        WebSocketEvents.MEMORY_UPDATED,
+                        {'action': 'added', 'memory': _serialize_memory_for_emit(memory)},
+                        to=sid
+                    )
+                    logger.info(f'Saved to Memory Lane: "{title}"')
+                except Exception as e:
+                    logger.warning(f'Failed to save to Memory Lane: {e}')
             
             tool_result = await self.tool_engine.detect_and_execute_tools(
                 user_message,
@@ -677,8 +743,11 @@ class SocketHandler:
             
             memory_context = await self.memory_engine.get_memory_context(
                 session.user_id,
-                3
+                limit=8,
+                current_message=user_message
             )
+            if memory_context:
+                logger.info(f'Using {len(memory_context)} chars of Memory Lane context for response')
             
             contextual_message = user_message
             if tool_result and tool_result.get('toolUsed') and tool_result.get('result', {}).get('success'):
@@ -881,7 +950,7 @@ class SocketHandler:
                 WebSocketEvents.MEMORY_UPDATED,
                 {
                     'action': 'added',
-                    'memory': memory
+                    'memory': _serialize_memory_for_emit(memory)
                 },
                 to=sid
             )
@@ -909,7 +978,7 @@ class SocketHandler:
                 WebSocketEvents.MEMORY_UPDATED,
                 {
                     'action': 'updated',
-                    'memory': memory
+                    'memory': _serialize_memory_for_emit(memory) if memory else None
                 },
                 to=sid
             )
