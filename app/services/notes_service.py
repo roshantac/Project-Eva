@@ -265,5 +265,3 @@ class NotesService:
             return f"**{title}:**\n" + '\n'.join(formatted_lines)
         else:
             return f"**{title}:** {content}"
-
-# Made with Bob

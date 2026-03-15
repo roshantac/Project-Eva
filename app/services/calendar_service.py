@@ -484,5 +484,3 @@ class CalendarService:
             pass
         
         return None
-
-# Made with Bob

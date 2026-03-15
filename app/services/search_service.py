@@ -198,5 +198,3 @@ class SearchService:
                 'error': str(e),
                 'message': f"Failed to search for '{query}'"
             }
-
-# Made with Bob

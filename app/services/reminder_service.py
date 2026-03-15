@@ -308,5 +308,3 @@ class ReminderService:
             pass
         
         return None
-
-# Made with Bob
