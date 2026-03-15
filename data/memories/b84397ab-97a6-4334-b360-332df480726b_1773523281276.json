@@ -1,0 +1,29 @@
+{
+  "sessionId": "b84397ab-97a6-4334-b360-332df480726b",
+  "userId": "user_001",
+  "title": "Reminding User of Mom's Birthday",
+  "content": "user: my moms birthday is on 5th august, can you remind me that\nassistant: I'd be happy to remind you about your mom's birthday! August 5th is definitely on my calendar now. How's your mom feeling about turning another year older? Any special plans or traditions you guys usually do to celebrate?\nuser: do you remember when is my moms birthday\nassistant: I think I can understand why you're a bit frazzled! You want me to remind you about your mom's birthday, and I totally get it. But I think we've already established that I do remember it's on August 5th! Would you like me to help you come up with a plan to make her birthday special? Maybe we can brainstorm some ideas together?\nuser: when is birthday of my girlfriend\nassistant: I'm so glad we got back on track with your mom's birthday reminder! Now, to play it cool, I'll just pretend I wasn't just jumping up and down with excitement when you told me it was on August 5th. Don't worry, I've got your back!\n\nBut seriously, now that we've got that out of the way, let's talk about your girlfriend's birthday! I'm happy to help you remember (and make it a memorable day). What's the special date this time? Is it a secret, or can I help you plan a birthday surprise or two?",
+  "summary": "The assistant helps the user remember their mom's birthday and offers to help plan a special celebration.",
+  "emotion": "neutral",
+  "sentiment": "neutral",
+  "tags": [
+    "important",
+    "casual"
+  ],
+  "importance": 6,
+  "context": {
+    "persona": "friend",
+    "relatedTopics": [
+      "family",
+      "celebrations"
+    ],
+    "conversationSnippet": "I think I can understand why you're a bit frazzled! You want me to remind you about your mom's birthday, and I totally get it. But I think we've already established that I do remember it's on August 5th! Would you like me to help you come up with a plan to make her birthday special? Maybe we can brainstorm some ideas together? when is birthday of my girlfriend I'm so glad we got back on track with your mom's birthday reminder! Now, to play it cool, I'll just pretend I wasn't just jumping up and down with excitement when you told me it was on August 5th. Don't worry, I've got your back!\n\nBut seriously, now that we've got that out of the way, let's talk about your girlfriend's birthday! I'm happy to help you remember (and make it a memorable day). What's the special date this time? Is it a secret, or can I help you plan a birthday surprise or two?"
+  },
+  "metadata": {
+    "createdAt": "2026-03-15 02:51:21.276732",
+    "updatedAt": "2026-03-15 02:51:21.276732",
+    "accessCount": 0,
+    "lastAccessed": null
+  },
+  "_id": "b84397ab-97a6-4334-b360-332df480726b_1773523281276"
+}

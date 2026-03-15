@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Microphone Test</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    button {
+      padding: 15px 30px;
+      font-size: 16px;
+      margin: 10px;
+      cursor: pointer;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    .recording {
+      background: #f44336;
+    }
+    #output {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 5px;
+      margin-top: 20px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .meter {
+      width: 100%;
+      height: 30px;
+      background: #333;
+      border-radius: 5px;
+      margin: 20px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .meter-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #FFC107, #f44336);
+      width: 0%;
+      transition: width 0.1s;
+    }
+    .devices {
+      margin: 20px 0;
+    }
+    select {
+      padding: 10px;
+      font-size: 14px;
+      width: 100%;
+      max-width: 400px;
+      background: #2a2a2a;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎤 Microphone Diagnostic Tool</h1>
+  
+  <div class="devices">
+    <label for="micSelect">Select Microphone:</label><br>
+    <select id="micSelect">
+      <option value="">Loading devices...</option>
+    </select>
+  </div>
+
+  <div class="meter">
+    <div class="meter-fill" id="meterFill"></div>
+  </div>
+  <p id="levelText">Audio Level: 0%</p>
+
+  <button id="testBtn">🎤 Test Microphone (5 seconds)</button>
+  <button id="playBtn" disabled>▶️ Play Recording</button>
+  
+  <div id="output">Click "Test Microphone" to start...</div>
+
+  <script>
+    let stream = null;
+    let recorder = null;
+    let chunks = [];
+    let audioBlob = null;
+    let audioContext = null;
+    let analyser = null;
+    let animationFrame = null;
+
+    const output = document.getElementById('output');
+    const testBtn = document.getElementById('testBtn');
+    const playBtn = document.getElementById('playBtn');
+    const micSelect = document.getElementById('micSelect');
+    const meterFill = document.getElementById('meterFill');
+    const levelText = document.getElementById('levelText');
+
+    function log(msg) {
+      output.textContent += msg + '\n';
+      output.scrollTop = output.scrollHeight;
+    }
+
+    // List available microphones
+    async function listMicrophones() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(d => d.kind === 'audioinput');
+        
+        micSelect.innerHTML = '';
+        audioInputs.forEach(device => {
+          const option = document.createElement('option');
+          option.value = device.deviceId;
+          option.textContent = device.label || `Microphone ${device.deviceId.slice(0, 8)}`;
+          micSelect.appendChild(option);
+        });
+        
+        log(`Found ${audioInputs.length} microphone(s)`);
+        audioInputs.forEach((d, i) => {
+          log(`  ${i + 1}. ${d.label || 'Unknown'}`);
+        });
+      } catch (err) {
+        log('❌ Error listing devices: ' + err.message);
+      }
+    }
+
+    // Update audio level meter
+    function updateMeter() {
+      if (!analyser) return;
+      
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(dataArray);
+      
+      const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+      const percent = (average / 255 * 100).toFixed(0);
+      
+      meterFill.style.width = percent + '%';
+      levelText.textContent = `Audio Level: ${percent}%`;
+      
+      animationFrame = requestAnimationFrame(updateMeter);
+    }
+
+    // Test microphone
+    testBtn.addEventListener('click', async () => {
+      try {
+        output.textContent = '';
+        log('🎤 Starting microphone test...\n');
+        
+        // Get selected microphone
+        const deviceId = micSelect.value;
+        const constraints = {
+          audio: {
+            deviceId: deviceId ? { exact: deviceId } : undefined,
+            echoCancellation: true,
+            noiseSuppression: false,
+            autoGainControl: true,
+            sampleRate: 48000
+          }
+        };
+        
+        log('Requesting microphone access...');
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        log('✅ Microphone access granted\n');
+        
+        // Get audio track info
+        const track = stream.getAudioTracks()[0];
+        const settings = track.getSettings();
+        log('Audio Track Settings:');
+        log(`  Device: ${settings.deviceId}`);
+        log(`  Sample Rate: ${settings.sampleRate} Hz`);
+        log(`  Channel Count: ${settings.channelCount}`);
+        log(`  Echo Cancellation: ${settings.echoCancellation}`);
+        log(`  Noise Suppression: ${settings.noiseSuppression}`);
+        log(`  Auto Gain Control: ${settings.autoGainControl}\n`);
+        
+        // Setup audio level monitoring
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        const source = audioContext.createMediaStreamSource(stream);
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        updateMeter();
+        
+        // Setup recorder
+        const mimeType = 'audio/webm;codecs=opus';
+        recorder = new MediaRecorder(stream, {
+          mimeType: mimeType,
+          audioBitsPerSecond: 256000
+        });
+        
+        log(`MediaRecorder Settings:`);
+        log(`  MIME Type: ${mimeType}`);
+        log(`  Bitrate: 256 kbps\n`);
+        
+        chunks = [];
+        let chunkCount = 0;
+        
+        recorder.ondataavailable = (e) => {
+          chunkCount++;
+          log(`📦 Chunk ${chunkCount}: ${e.data.size.toLocaleString()} bytes`);
+          chunks.push(e.data);
+        };
+        
+        recorder.onstop = () => {
+          audioBlob = new Blob(chunks, { type: mimeType });
+          const totalSize = audioBlob.size;
+          
+          log(`\n✅ Recording Complete!`);
+          log(`  Total Chunks: ${chunks.length}`);
+          log(`  Total Size: ${totalSize.toLocaleString()} bytes`);
+          log(`  Expected: 50,000+ bytes for 5 seconds\n`);
+          
+          if (totalSize < 5000) {
+            log('❌ PROBLEM: File too small!');
+            log('   Possible causes:');
+            log('   1. Not speaking / speaking too quietly');
+            log('   2. Wrong microphone selected');
+            log('   3. Microphone input level too low');
+            log('   4. Microphone muted in system settings\n');
+          } else if (totalSize < 20000) {
+            log('⚠️  WARNING: File smaller than expected');
+            log('   Try speaking louder or closer to mic\n');
+          } else {
+            log('✅ File size looks good!\n');
+          }
+          
+          playBtn.disabled = false;
+          testBtn.disabled = false;
+          testBtn.textContent = '🎤 Test Again';
+          
+          // Stop meter
+          if (animationFrame) {
+            cancelAnimationFrame(animationFrame);
+          }
+          meterFill.style.width = '0%';
+          levelText.textContent = 'Audio Level: 0%';
+          
+          // Stop stream
+          stream.getTracks().forEach(t => t.stop());
+        };
+        
+        log('🎤 Recording for 5 seconds...');
+        log('📢 SPEAK LOUDLY NOW!\n');
+        
+        testBtn.disabled = true;
+        testBtn.classList.add('recording');
+        testBtn.textContent = '⏺️ Recording... (5s)';
+        
+        recorder.start(100);
+        
+        setTimeout(() => {
+          log('⏹️  Stopping recorder...\n');
+          recorder.stop();
+          testBtn.classList.remove('recording');
+        }, 5000);
+        
+      } catch (err) {
+        log('❌ Error: ' + err.message);
+        testBtn.disabled = false;
+      }
+    });
+
+    // Play recorded audio
+    playBtn.addEventListener('click', () => {
+      if (audioBlob) {
+        const url = URL.createObjectURL(audioBlob);
+        const audio = new Audio(url);
+        
+        log('▶️  Playing recorded audio...');
+        
+        audio.onended = () => {
+          log('✅ Playback finished\n');
+          URL.revokeObjectURL(url);
+        };
+        
+        audio.onerror = (e) => {
+          log('❌ Playback error: ' + e.message);
+        };
+        
+        audio.play();
+      }
+    });
+
+    // Initialize
+    listMicrophones();
+    
+    // Refresh device list when permissions change
+    navigator.mediaDevices.addEventListener('devicechange', listMicrophones);
+  </script>
+</body>
+</html>

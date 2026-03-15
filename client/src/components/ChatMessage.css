@@ -1,0 +1,98 @@
+.chat-message {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.user-message {
+  background: var(--surface);
+  margin-left: auto;
+  max-width: 80%;
+}
+
+.bot-message {
+  background: var(--surface-light);
+  margin-right: auto;
+  max-width: 80%;
+}
+
+.message-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: white;
+}
+
+.message-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.message-sender {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.message-emotion {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.message-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.transcribed-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}
+
+.message-text {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.chat-message:hover {
+  transform: translateX(2px);
+}

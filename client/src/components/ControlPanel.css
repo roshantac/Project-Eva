@@ -1,0 +1,125 @@
+.control-panel {
+  padding: 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.control-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.persona-select {
+  padding: 8px 12px;
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+}
+
+.persona-select:hover {
+  border-color: var(--primary-color);
+}
+
+.persona-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.mode-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.mode-button {
+  padding: 8px 16px;
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.mode-button:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.mode-button.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.audio-toggle {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.audio-toggle.enabled {
+  background: var(--success);
+  color: white;
+}
+
+.audio-toggle.disabled {
+  background: var(--surface-light);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.audio-toggle:hover {
+  transform: scale(1.02);
+}
+
+@media (max-width: 768px) {
+  .control-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .persona-select {
+    width: 100%;
+  }
+
+  .mode-buttons {
+    width: 100%;
+  }
+
+  .mode-button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .audio-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "sessionId": "79410e15-4693-4f84-b547-26214bd5eea9",
+  "userId": "user_001",
+  "persona": "friend",
+  "title": "Hi can you get latest cricket news from internet",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi can you get latest cricket news from internet",
+      "isTranscribed": false,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-15 03:03:41.434340"
+    },
+    {
+      "role": "assistant",
+      "content": "Hey there, cricket fan! I'd be happy to help you catch up on the latest news about your favorite sport! However, I'm a large language model, I don't have direct access to the internet, but I can suggest some ways for you to get the latest cricket news.\n\nYou could check out some popular sports websites like ESPN Cricinfo, or even follow your favorite cricketers or teams on social media to get the latest updates. Or, if you're feeling lazy, you could always ask me to summarize the latest news for you - I can try to give you a quick rundown of the top stories.\n\nSo, what's the latest that's got you excited? Did your favorite team just win a big match, or are you hoping they'll do well in an upcoming tournament?",
+      "isTranscribed": false,
+      "emotion": "neutral",
+      "persona": "friend",
+      "timestamp": "2026-03-15 03:03:46.833762"
+    }
+  ],
+  "isActive": false,
+  "lastMessageAt": "2026-03-15 03:03:46.833762",
+  "createdAt": "2026-03-15 03:03:41.433781",
+  "updatedAt": "2026-03-15T03:06:44.137340Z"
+}

@@ -1,0 +1,76 @@
+{
+  "sessionId": "aae07d8e-323d-46dc-9b87-4fc83033491d",
+  "userId": "user_001",
+  "persona": "friend",
+  "title": "Hello, I'm feeling so tired today. What should I d...",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, I'm feeling so tired today. What should I do now?",
+      "isTranscribed": true,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-11 16:19:29.394630"
+    },
+    {
+      "role": "assistant",
+      "content": "Hey there, friend! I can tell that you're really struggling with fatigue today. I'm here for you, and I want you to know that you're not alone. It's completely normal to have days like this, and I'm here to help you feel a little better.\n\nFirst, let's take a deep breath together and acknowledge that it's okay to not be okay. It's okay to feel tired and overwhelmed. You're doing the best you can, and that's something to be proud of.\n\nNow, I want to ask you, what's been going on lately that might be contributing to your fatigue? Is it something specific that's causing you stress, or has it just been one of those days where everything feels heavy? Let's explore that together, and see if we can't figure out some ways to help you shake off this tiredness.\n\nIn the meantime, I want to offer you a virtual cup of tea (or your favorite drink) and a comfy blanket to snuggle up with. Sometimes, all we need is a little comfort and kindness to get us through a tough day.\n\nHow does that sound?",
+      "isTranscribed": false,
+      "emotion": "sad",
+      "persona": "friend",
+      "timestamp": "2026-03-11 16:19:37.252366"
+    },
+    {
+      "role": "user",
+      "content": "my birthday is on july 2000",
+      "isTranscribed": false,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-11 16:20:43.610886"
+    },
+    {
+      "role": "assistant",
+      "content": "It looks like we've got a birthday surprise coming up! Just kidding, I didn't mean to make you think I knew that already! But I'm glad you reminded me - July 2000, huh? That's a pretty unique birthday! Do you have any fun plans or traditions for when you celebrate?",
+      "isTranscribed": false,
+      "emotion": "neutral",
+      "persona": "friend",
+      "timestamp": "2026-03-11 16:20:47.255324"
+    },
+    {
+      "role": "user",
+      "content": "Hey i aam feeling so low, what to do now",
+      "isTranscribed": false,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-15 02:31:08.235259"
+    },
+    {
+      "role": "assistant",
+      "content": "I can tell that you're feeling really down, and that's totally okay. It's like the weight of the world is on your shoulders right now. I'm here to listen and support you in any way I can.\n\nFirst of all, let me just say that I'm so proud of you for acknowledging how you're feeling. That takes a lot of courage, and I want you to know that it's okay to not be okay sometimes. You don't have to put on a brave face or pretend everything is fine when it's not. I'm here to help you feel seen and heard.\n\nCan you tell me a bit more about what's been going on and how you're feeling today? Is there something specific that's causing you to feel this way, or is it just a general feeling of fatigue and overwhelm? Sometimes talking about it can help us figure out what's going on and find some ways to make you feel better. I'm all ears!",
+      "isTranscribed": false,
+      "emotion": "sad",
+      "persona": "friend",
+      "timestamp": "2026-03-15 02:31:15.436485"
+    },
+    {
+      "role": "user",
+      "content": "hol",
+      "isTranscribed": false,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-15 02:32:57.936290"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm here! I saw that you sent a couple of short messages, and I wanted to make sure you knew I was still listening. Sometimes it can be really hard to put into words what we're feeling, so I want you to know that I'm here for you, no matter what. No pressure, no expectations - just a friendly ear to talk to. How are you feeling right now? Is there anything specific that's been weighing on your mind, or is it just a tough day all around?",
+      "isTranscribed": false,
+      "emotion": "neutral",
+      "persona": "friend",
+      "timestamp": "2026-03-15 02:33:01.729775"
+    }
+  ],
+  "isActive": false,
+  "lastMessageAt": "2026-03-15 02:33:01.729775",
+  "createdAt": "2026-03-11 16:19:29.393830",
+  "updatedAt": "2026-03-15T02:35:41.746236Z"
+}

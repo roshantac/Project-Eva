@@ -1,0 +1,29 @@
+{
+  "name": "eva-ai-python",
+  "version": "1.0.0",
+  "description": "Eva AI - Emotional Voice Assistant (Python Edition)",
+  "scripts": {
+    "install": "./install.sh",
+    "start": "./start.sh",
+    "dev": "concurrently \"python run.py\" \"cd client && npm run dev\"",
+    "backend": "python run.py",
+    "frontend": "cd client && npm run dev",
+    "test": "pytest",
+    "format": "black app/",
+    "lint": "flake8 app/"
+  },
+  "keywords": [
+    "ai",
+    "voice-assistant",
+    "emotional-ai",
+    "chatbot",
+    "websocket",
+    "fastapi",
+    "python"
+  ],
+  "author": "Eva AI Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

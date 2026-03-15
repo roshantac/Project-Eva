@@ -1,0 +1,20 @@
+{
+  "sessionId": "b0c79ff0-7a7a-4b03-90b3-0eeec88eb1a6",
+  "userId": "user_001",
+  "persona": "friend",
+  "title": "hey",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hey",
+      "isTranscribed": false,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-11 15:16:55.448165"
+    }
+  ],
+  "isActive": false,
+  "lastMessageAt": "2026-03-11 15:16:55.448165",
+  "createdAt": "2026-03-11 15:16:55.447329",
+  "updatedAt": "2026-03-11T15:27:21.066470Z"
+}

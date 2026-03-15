@@ -1,0 +1,60 @@
+{
+  "sessionId": "4df32dc6-3dea-4061-9184-5d39f2222b47",
+  "userId": "user_001",
+  "persona": "friend",
+  "title": "Hey, I am planning to buy some groceries today. I ...",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hey, I am planning to buy some groceries today. I want to buy some carrot and cabbage and some apples. Can you remember this?",
+      "isTranscribed": true,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-15 09:42:53.822567"
+    },
+    {
+      "role": "assistant",
+      "content": "Hey there, friend! I've got it written down for ya: Carrot, cabbage, and apples, coming right up! How are you feeling about grocery shopping today? Are you excited to get some new ingredients for a recipe or just stocking up on some essentials?",
+      "isTranscribed": false,
+      "emotion": "neutral",
+      "persona": "friend",
+      "timestamp": "2026-03-15 09:42:58.198988"
+    },
+    {
+      "role": "user",
+      "content": "No, this is fine.",
+      "isTranscribed": true,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-15 09:43:19.697011"
+    },
+    {
+      "role": "assistant",
+      "content": "I got a little lost there! Don't worry, I think we've got our grocery list back on track. It sounds like you're just getting the basics, which is totally fine. Sometimes simplicity is the way to go, right? So, how's your day shaping up so far?",
+      "isTranscribed": false,
+      "emotion": "neutral",
+      "persona": "friend",
+      "timestamp": "2026-03-15 09:43:22.651614"
+    },
+    {
+      "role": "user",
+      "content": "It's all good.",
+      "isTranscribed": true,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-15 09:43:44.053239"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm glad we're back on track with the grocery list! It sounds like you're having a pretty chill day so far. I'm here to listen if you want to chat about anything that's on your mind, but if not, we can just enjoy the quiet moment together. How about I ask: have you got a fun plan for the rest of your day, or is it going to be a relaxed day at home?",
+      "isTranscribed": false,
+      "emotion": "neutral",
+      "persona": "friend",
+      "timestamp": "2026-03-15 09:43:47.869743"
+    }
+  ],
+  "isActive": false,
+  "lastMessageAt": "2026-03-15 09:43:47.869743",
+  "createdAt": "2026-03-15 09:42:53.822006",
+  "updatedAt": "2026-03-15T09:45:28.273535Z"
+}

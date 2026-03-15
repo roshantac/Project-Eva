@@ -1,0 +1,44 @@
+{
+  "sessionId": "7a4e627d-a50d-4072-88cf-6006f24ede74",
+  "userId": "user_001",
+  "persona": "friend",
+  "title": "Hello, how are you?",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, how are you?",
+      "isTranscribed": true,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-11 16:13:44.006481"
+    },
+    {
+      "role": "assistant",
+      "content": "Hey there! I'm just an AI, but I'm here and ready to assist you with anything you need. How about you? Hope you're having a great day or night! Remember, no matter the time of day, I'm always here for a chat. What's on your mind today?",
+      "isTranscribed": false,
+      "emotion": "neutral",
+      "persona": "friend",
+      "timestamp": "2026-03-11 16:13:51.635216"
+    },
+    {
+      "role": "user",
+      "content": "I'm feeling so tired today.",
+      "isTranscribed": true,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-11 16:14:13.225157"
+    },
+    {
+      "role": "assistant",
+      "content": "\nHey there, I can sense you're not at your usual bouncy self, and that's totally okay! It's not always easy to keep up with the energy of the world. Feeling tired can be a sign that we need to take a beat and recharge, like a smartphone and its battery. Have you been getting enough rest lately? Maybe it's time to switch up your routine and ensure you're taking care of yourself a bit better. If you'd like, we could brainstorm some ways to help tackle that weariness. Remember, I'm here for you, and it's totally fine to reach out if you need to talk or share.",
+      "isTranscribed": false,
+      "emotion": "neutral",
+      "persona": "friend",
+      "timestamp": "2026-03-11 16:14:20.833735"
+    }
+  ],
+  "isActive": false,
+  "lastMessageAt": "2026-03-11 16:14:20.833735",
+  "createdAt": "2026-03-11 16:13:44.005571",
+  "updatedAt": "2026-03-11T16:17:22.590486Z"
+}

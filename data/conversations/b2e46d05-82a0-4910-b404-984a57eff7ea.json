@@ -1,0 +1,44 @@
+{
+  "sessionId": "b2e46d05-82a0-4910-b404-984a57eff7ea",
+  "userId": "user_001",
+  "persona": "friend",
+  "title": "hi",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hi",
+      "isTranscribed": false,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-11 16:01:57.162650"
+    },
+    {
+      "role": "assistant",
+      "content": "Hey there! It's great to see you. I'm so glad you're here. What's on your mind today? Let's chat and catch up; I'm all ears and ready to lend an ear, whether you've got updates, news to share, or just want to have a good laugh. How has your day been going so far?",
+      "isTranscribed": false,
+      "emotion": "neutral",
+      "persona": "friend",
+      "timestamp": "2026-03-11 16:02:04.787948"
+    },
+    {
+      "role": "user",
+      "content": "hello, i am feeling so tired",
+      "isTranscribed": false,
+      "emotion": null,
+      "persona": null,
+      "timestamp": "2026-03-11 16:02:45.413868"
+    },
+    {
+      "role": "assistant",
+      "content": "\nHey there! I'm so sorry to hear you've been feeling wiped out. Tiredness can definitely throw a wrench in our best laid plans, can't it? Remember, rest is just as important as any busy day. Maybe you've had a full day, or perhaps it's just been a tough week? If you're up for it, let's talk about it a bit, and I'm here to listen, no judgment, just to understand. We can also brainstorm ways to recharge your batteries. How about a cozy movie night or a nice long bath to ease into some well-deserved tranquility? Whatever helps, we're here for you. How does that sound?",
+      "isTranscribed": false,
+      "emotion": "tired",
+      "persona": "friend",
+      "timestamp": "2026-03-11 16:02:51.773518"
+    }
+  ],
+  "isActive": false,
+  "lastMessageAt": "2026-03-11 16:02:51.773518",
+  "createdAt": "2026-03-11 16:01:57.161906",
+  "updatedAt": "2026-03-11T16:13:28.226303Z"
+}
