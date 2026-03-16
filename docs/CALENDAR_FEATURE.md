@@ -205,4 +205,3 @@ All required dependencies are already in `requirements.txt`:
 - `python-dateutil==2.8.2` - For parsing natural language dates
 - `apscheduler==3.11.2` - For scheduling (used by reminder service)
 
-## Made with ❤️ by Bob
