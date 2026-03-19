@@ -25,7 +25,7 @@ EVA is an intelligent, emotion-aware voice assistant that combines natural langu
 ### 🛠️ Smart Tools
 
 - **📅 Calendar Management**: Schedule meetings, view today's calendar, list all meetings
-- **⏰ Reminders**: Set time-based reminders with voice notifications
+- **⏰ Smart Reminders**: Set time-based reminders with 2.5-second notification sound + voice alerts
 - **📝 Notes**: Save, retrieve, and manage notes and lists
 - **🌤️ Weather**: Get current weather, forecasts, and weather-based advice
 - **🔍 Web Search**: Search the internet for information
@@ -61,7 +61,7 @@ chmod +x start.sh
 ./start.sh
 ```
 
-**Interactive Menu (1–10):**
+**Interactive Menu (1–11):**
 
 1. Run only (basic) — Python 3.14
 2. Run only (with audio emotions) — Python 3.12
@@ -71,7 +71,8 @@ chmod +x start.sh
 6. Install Kokoro-82M TTS then run
 7. Install ALL (emotions + Kokoro)
 8. **Install MAX MODE then run** — Full install + run in MAX MODE
-9. Help | 10. Exit
+9. **Clear all data (fresh start)** — Clear reminders, memories, conversations
+10. Help | 11. Exit
 
 ### Command Line Options
 
@@ -259,15 +260,16 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 
 ---
 
-### ⏰ Reminder Management
+### ⏰ Smart Reminder System
 
-**What it does**: Set time-based reminders with voice notifications when they trigger.
+**What it does**: Set time-based reminders with multi-sensory notifications (sound + voice + visual).
 
 **Setting Reminders:**
 
 ```
 ✅ Text/Voice Prompts:
 "Remind me to call John in 30 minutes"
+"Remind me to call khadeeja after 1 minute"
 "Set a reminder for tomorrow at 9am to check emails"
 "Remind me about the meeting at 5pm"
 "Remind me to take medicine in 2 hours"
@@ -279,6 +281,30 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 - Reminder message/task
 - Time (relative: "in 30 minutes" or absolute: "tomorrow at 9am")
 - Automatically schedules and notifies you
+
+✨ EVA Response:
+"✅ Reminder set! I'll remind you to call John in 30 minutes."
+```
+
+**When Reminder Triggers:**
+
+```
+🔔 Multi-Sensory Notification:
+
+1. 🎵 Notification Sound (2.5 seconds)
+   - Beep-Beep-Beep pattern
+   - Pause
+   - Beep-Beep-Beep pattern
+   - Long emphasis beep
+   
+2. 🗣️ Voice Message
+   - "Reminder: call John"
+   - Speaks after notification sound completes
+   
+3. 👁️ Visual Indicators
+   - Bell icon in header pulses red
+   - Text notification appears in chat
+   - Counter badge shows active reminders
 ```
 
 **Viewing Reminders:**
@@ -294,6 +320,7 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 - Lists all active reminders
 - Shows time and message
 - Displays in chronological order
+- Bell icon shows count of active reminders
 ```
 
 **Managing Reminders:**
@@ -305,9 +332,11 @@ EVA supports both **text** and **voice** input for all commands. Simply type or 
 "Cancel my medicine reminder"
 
 📝 Features:
-- Voice notification when reminder triggers
+- Multi-sensory notifications (sound + voice + visual)
 - Persistent across sessions
 - Automatic cleanup of past reminders
+- Real-time counter in UI
+- Works even when browser tab is inactive
 ```
 
 ---
@@ -580,11 +609,21 @@ EVA processes both the same way, so use whichever is more convenient for you.
 ## 🏗️ Project Structure
 
 ```
-eva-ai/
-├── app/                      # Backend application
-│   ├── config/              # Configuration files
-│   ├── database/            # Database handlers
-│   ├── engines/             # Core engines (emotion, memory, tools)
+fullstack/
+├── README.md                 # Main project documentation
+├── start.sh                  # Main startup script (ONLY script in root)
+├── .env                      # Environment configuration
+├── .env.example              # Environment template
+├── .gitignore               # Git ignore rules
+├── requirements.txt          # Python dependencies (merged, includes Kokoro)
+├── package.json             # Node.js dependencies
+│
+├── app/                     # Backend application code
+│   ├── __init__.py
+│   ├── main.py              # FastAPI application entry
+│   ├── config/              # Configuration modules
+│   ├── database/            # Database adapters
+│   ├── engines/             # Core engines (emotion, memory, persona, tools)
 │   ├── models/              # Data models
 │   ├── services/            # Business logic services
 │   │   ├── calendar_service.py
@@ -593,36 +632,71 @@ eva-ai/
 │   │   ├── llm_service.py
 │   │   ├── tts_service.py
 │   │   └── stt_service.py
-│   ├── websocket/           # WebSocket handlers
-│   └── main.py              # Application entry point
-├── client/                   # Frontend React application
+│   ├── utils/               # Utility functions
+│   └── websocket/           # WebSocket handlers
+│
+├── client/                  # Frontend React application
 │   ├── src/
 │   │   ├── components/      # React components
-│   │   ├── hooks/           # Custom React hooks
+│   │   ├── hooks/           # Custom React hooks (including useNotificationSound)
 │   │   └── services/        # API services
 │   └── public/              # Static assets
-├── data/                     # User data storage
-├── docs/                     # Documentation
-├── logs/                     # Application logs
-├── .env.example             # Environment template
-├── requirements.txt         # Python dependencies
-├── package.json             # Node.js dependencies
-└── README.md                # This file
+│
+├── scripts/                 # Installation and utility scripts
+│   ├── install.sh           # Main installation script
+│   ├── install-audio-emotion.sh
+│   ├── install-kokoro-local.sh
+│   ├── clear_data.sh        # Data cleanup script
+│   └── ...                  # Other utility scripts
+│
+├── tests/                   # Test files
+│   ├── test_audio_services.py
+│   ├── test_calendar_service.py
+│   ├── test_llm_service.py
+│   └── test_reminder_notification.py
+│
+├── docs/                    # Documentation
+│   ├── API_REFERENCE.md
+│   ├── CALENDAR_FEATURE.md
+│   ├── REMINDER_NOTIFICATION_SYSTEM.md
+│   ├── LLM_RESPONSE_EXAMPLES.md
+│   ├── TESTING_GUIDE.md
+│   └── PROJECT_STRUCTURE.md
+│
+├── data/                    # Application data
+│   ├── conversations/       # Conversation history
+│   ├── memories/            # User memories
+│   ├── notes/               # User notes
+│   ├── reminders.json       # Active reminders
+│   └── calendar.json        # Calendar events
+│
+├── uploads/                 # File uploads
+├── venv/                    # Python 3.14 virtual environment (basic mode)
+└── venv-py312/              # Python 3.12 virtual environment (emotions/Kokoro)
 ```
+
+**Key Improvements:**
+- ✅ Cleaner root directory (only essential files)
+- ✅ All scripts organized in `scripts/` directory
+- ✅ All tests organized in `tests/` directory
+- ✅ Merged requirements files for simplicity
+- ✅ Better separation of concerns
+
+See [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) for detailed structure documentation.
 
 ## 🔧 Development
 
 ### Running Tests
 
 ```bash
-# Test calendar service
-python test_calendar_service.py
+# All tests are now in tests/ directory
+python tests/test_calendar_service.py
+python tests/test_llm_service.py
+python tests/test_audio_services.py
+python tests/test_reminder_notification.py
 
-# Test LLM service
-python test_llm_service.py
-
-# Test audio services
-python test_audio_services.py
+# Or run all tests with pytest
+pytest tests/
 ```
 
 ### Adding New Features
@@ -634,6 +708,13 @@ python test_audio_services.py
 
 ## 📚 Documentation
 
+### New Features Documentation
+- **[Reminder Notification System](docs/REMINDER_NOTIFICATION_SYSTEM.md)** - Complete guide to smart reminders with sound + voice
+- **[LLM Response Examples](docs/LLM_RESPONSE_EXAMPLES.md)** - Response format guidelines and 50+ examples
+- **[Testing Guide](docs/TESTING_GUIDE.md)** - How to test EVA from scratch with clean data
+- **[Project Structure](docs/PROJECT_STRUCTURE.md)** - Detailed project organization and file layout
+
+### Core Documentation
 - [Calendar Feature Guide](docs/CALENDAR_FEATURE.md)
 - [API Reference](docs/API_REFERENCE.md)
 - [Project Details](docs/PROJECT.md)
